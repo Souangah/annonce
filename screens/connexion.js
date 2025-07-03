@@ -1,51 +1,97 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { GlobalContext } from '../config/GlobalUser'; // adapte ce chemin si besoin
+import { Feather } from '@expo/vector-icons';
 
 export default function Connexion({ navigation }) {
-  const [login, setLogin] = useState('');
-  const [motDePass, setMotDePass] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [mdp, setMdp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [user, setUser] = useContext(GlobalContext);
 
-  const handleConnexion = () => {
-    // Simuler une authentification
-    if (login === 'admin' && motDePass === 'admin') {
-      navigation.navigate('Menu', { user: { login } });
-    } else {
-      Alert.alert('Erreur', 'Identifiants invalides');
+  // Facultatif : charger des valeurs par défaut depuis une API
+  useEffect(() => {
+    const fetchUserDefaults = async () => {
+      try {
+        const response = await fetch('https://epencia.net/app/diako/api/connexion.php'); // adapte l'URL
+        const result = await response.json();
+        if (result && result[0]) {
+          setTelephone(result[0].telephone || '');
+          setMdp(result[0].mdp || '');
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des données par défaut :', error);
+      }
+    };
+
+    fetchUserDefaults();
+  }, []);
+
+  const handleConnexion = async () => {
+    if (!telephone.trim() || !mdp.trim()) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://epencia.net/app/diako/api/connexion.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telephone, mdp }),
+      });
+
+      const result = await response.json();
+      console.log('Réponse serveur:', result);
+
+      if (result.length > 0 && result[0].telephone) {
+        setUser(result[0]);
+        navigation.navigate('Menu');
+      } else {
+        Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la connexion :', error);
+      Alert.alert('Erreur', "Une erreur est survenue lors de la connexion.");
     }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Connexion</Text>
-        
-        <TextInput 
-          placeholder="Login" 
-          style={styles.input} 
-          value={login} 
-          onChangeText={setLogin}
-          placeholderTextColor="#999"
+      <Text style={styles.title}>Connexion</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Téléphone"
+        keyboardType="numeric"
+        value={telephone}
+        maxLength={10}
+        onChangeText={(text) => {
+          const cleanText = text.replace(/[^0-9]/g, '');
+          setTelephone(cleanText);
+        }}
+      />
+
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Mot de passe"
+          secureTextEntry={!showPassword}
+          value={mdp}
+          maxLength={4}
+          onChangeText={setMdp}
         />
-        
-        <TextInput 
-          placeholder="Mot de passe" 
-          secureTextEntry 
-          style={styles.input} 
-          value={motDePass} 
-          onChangeText={setMotDePass}
-          placeholderTextColor="#999"
-        />
-        
-        <TouchableOpacity style={styles.button} onPress={handleConnexion}>
-          <Text style={styles.buttonText}>Se connecter</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-          <Text style={styles.link}>
-            Pas encore inscrit ? <Text style={styles.linkBold}>Crée un compte</Text>
-          </Text>
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+          <Feather name={showPassword ? 'eye' : 'eye-off'} size={24} color="#888" />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.button} onPress={handleConnexion}>
+        <Text style={styles.buttonText}>Se connecter</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+        <Text style={styles.linkText}>Pas encore inscrit ? S'inscrire</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -53,63 +99,55 @@ export default function Connexion({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 350,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 25,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+    justifyContent: 'center',
+    backgroundColor: '#f2f2f2',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 30,
+    fontSize: 24,
+    marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
   },
   input: {
-    height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 20,
-    paddingHorizontal: 15,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 5,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
     fontSize: 16,
-    backgroundColor: '#fafafa',
+  },
+  eyeButton: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
   },
   button: {
-    backgroundColor: '#4a90e2',
-    borderRadius: 8,
-    height: 50,
-    justifyContent: 'center',
+    backgroundColor: '#007bff',
+    padding: 12,
+    borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
   },
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
   },
-  link: {
-    marginTop: 20,
+  linkText: {
+    color: '#007bff',
     textAlign: 'center',
-    color: '#666',
-  },
-  linkBold: {
-    fontWeight: 'bold',
-    color: '#4a90e2',
+    marginTop: 15,
   },
 });

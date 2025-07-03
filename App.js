@@ -1,12 +1,16 @@
 
+import { enableScreens } from 'react-native-screens';
+enableScreens();
 import { StyleSheet, Text, View } from 'react-native';
 import Router from './config/router';
+import { GlobalProvider } from './config/GlobalUser';
+
 
 export default function App() {
   return (
-    <View style={styles.container}>
+    <GlobalProvider>
       <Router/>
-    </View>
+    </GlobalProvider>
   );
 }
 

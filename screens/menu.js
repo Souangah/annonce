@@ -1,12 +1,17 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { GlobalContext } from '../config/GlobalUser';
 
 const { width } = Dimensions.get('window');
 
 export default function Menu({ navigation, route }) {
-  const user = route.params?.user || { login: 'Utilisateur' };
 
+
+  const[user, setUser] = useContext(GlobalContext);
+   
+
+  // Configuration de l'en-tête
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -15,18 +20,18 @@ export default function Menu({ navigation, route }) {
         elevation: 0,
         shadowOpacity: 0,
       },
-      headerTintColor: '#000000', // Changé en noir
+      headerTintColor: '#000000',
       headerRight: () => (
         <View style={{ flexDirection: 'row', marginRight: 15 }}>
           <TouchableOpacity 
             onPress={() => Alert.alert('Notifications', 'Aucune notification')}
             style={styles.notificationBadge}
           >
-            <Icon name="notifications-outline" size={24} color="#000000" style={{ marginRight: 20 }} /> {/* Changé en noir */}
+            <Icon name="notifications-outline" size={22} color="#000000" style={{ marginRight: 20 }} /> 
             <View style={styles.badge} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Connexion')}>
-            <Icon name="log-out-outline" size={24} color="#000000" /> {/* Changé en noir */}
+            <Icon name="log-out-outline" size={22} color="#000000" /> 
           </TouchableOpacity>
         </View>
       ),
@@ -39,31 +44,29 @@ export default function Menu({ navigation, route }) {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Bonjour,</Text>
-          <Text style={styles.username}>{user.login}</Text>
+          <Text style={styles.username}>{user?.nom_prenom}</Text>
           <Text style={styles.subtitle}>Que souhaitez-vous faire aujourd'hui ?</Text>
         </View>
       </View>
 
-      {/* Menu en bas avec bouton central */}
+      {/* Menu en bas */}
       <View style={styles.bottomMenu}>
-
-          <TouchableOpacity 
+        <TouchableOpacity 
           style={styles.menuItem}
           onPress={() => Alert.alert('Plus', 'Options supplémentaires')}
         >
-          <Icon name="ellipsis-horizontal-outline" size={24} color="#000000" /> {/* Changé en noir */}
-          <Text style={styles.menuLabel}>Plus</Text>
+          <Icon name="home" size={24} color="#000000" /> 
+          <Text style={styles.menuLabel}>Acceuil</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={styles.menuItem}
           onPress={() => navigation.navigate('ListeAnnonces')}
         >
-          <Icon name="list-outline" size={24} color="#000000" /> {/* Changé en noir */}
+          <Icon name="list-outline" size={22} color="#000000" /> 
           <Text style={styles.menuLabel}>Annonces</Text>
         </TouchableOpacity>
 
-        {/* Bouton central d'action principale */}
         <TouchableOpacity
           style={styles.mainActionButton}
           onPress={() => navigation.navigate('AjouterAnnonce', { user })}
@@ -73,17 +76,17 @@ export default function Menu({ navigation, route }) {
 
         <TouchableOpacity 
           style={styles.menuItem}
-          onPress={() => navigation.navigate('MesAnnonces')}
+          onPress={() => navigation.navigate('ListeAnnonces')}
         >
-          <Icon name="briefcase-outline" size={24} color="#000000" /> {/* Changé en noir */}
+          <Icon name="briefcase-outline" size={22} color="#000000" /> 
           <Text style={styles.menuLabel}>Mes annonces</Text>
         </TouchableOpacity>
 
-          <TouchableOpacity 
+        <TouchableOpacity 
           style={styles.menuItem} 
-          onPress={() => navigation.navigate('Profil')}
+          onPress={() => navigation.navigate('ProfilUtilisateu')}
         >
-          <Icon name="person-outline" size={24} color="#000000" /> {/* Changé en noir */}
+          <Icon name="person-outline" size={22} color="#000000" /> 
           <Text style={styles.menuLabel}>Profil</Text>
         </TouchableOpacity>
       </View>
@@ -92,46 +95,25 @@ export default function Menu({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-    paddingTop: 40,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  greeting: {
-    fontSize: 24,
-    color: '#555',
-    fontWeight: '300',
-  },
-  username: {
-    fontSize: 28,
-    color: '#000000', // Changé en noir
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#888',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  content: { flex: 1, padding: 24, paddingTop: 40 },
+  header: { marginBottom: 32 },
+  greeting: { fontSize: 24, color: '#555', fontWeight: '300' },
+  username: { fontSize: 28, color: '#000', fontWeight: 'bold', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: '#888' },
   mainActionButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#000000', // Changé en noir
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
-    shadowColor: '#000000', // Changé en noir
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    marginTop: -25 ,
+    marginTop: -25,
   },
   bottomMenu: {
     flexDirection: 'row',
@@ -152,8 +134,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   menuLabel: {
-    fontSize: 12,
-    color: '#000000', // Changé en noir
+    fontSize: 10,
+    color: '#000',
     marginTop: 6,
     fontWeight: '500',
   },

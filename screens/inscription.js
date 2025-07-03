@@ -1,69 +1,136 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-export default function Inscription({ navigation }) {
-  const [nomPrenom, setNomPrenom] = useState('');
-  const [login, setLogin] = useState('');
-  const [motDePass, setMotDePass] = useState('');
+export default function NouveauUtilisateur({ navigation, route }) {
+  const item = route.params?.item || {};
+  const [id, setId] = useState(item.id || '');
+  const [nom_prenom, setNomPrenom] = useState(item.nom_prenom || '');
+  const [telephone, setTelephone] = useState(item.telephone || '');
+  const [mdp, setMdp] = useState(item.mdp || '');
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleInscription = () => {
-    // Logique d'inscription simulée
-    Alert.alert('Succès', 'Compte créé avec succès !');
-    navigation.navigate('Connexion');
+  const handlePhoneChange = (text) => {
+    const onlyNums = text.replace(/[^0-9]/g, '');
+    if (onlyNums.length <= 10) {
+      setTelephone(onlyNums);
+    }
+  };
+
+  const ValiderUtilisateur = async () => {
+    if (!id || !nom_prenom || !telephone || !mdp) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      return;
+    }
+
+    if (telephone.length !== 10) {
+      Alert.alert('Erreur', 'Le numéro doit contenir exactement 10 chiffres.');
+      return;
+    }
+
+    if (!/^\d{4}$/.test(mdp)) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir exactement 4 chiffres.');
+      return;
+    }
+
+    try {
+      const response = await fetch("https://epencia.net/app/diako/api/ajouter_utilisateur.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id: id,
+          nom_prenom: nom_prenom,
+          telephone: telephone,
+          mdp: mdp
+        })
+      });
+
+      const result = await response.json();
+      console.log(result);
+
+      if (result.message === "Succès") {
+        Alert.alert("Succès", "Utilisateur enregistré avec succès.");
+        setId('');
+        setNomPrenom('');
+        setTelephone('');
+        setMdp('');
+        navigation.navigate('Connexion');  // ← redirection vers écran Connexion
+      } else {
+        Alert.alert("Erreur", result.message || "Une erreur est survenue.");
+      }
+
+    } catch (error) {
+      Alert.alert("Erreur", "Échec lors de l'envoi des données.");
+      console.log("Erreur réseau :", error);
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Créer un compte</Text>
-        <Text style={styles.subtitle}>Rejoignez notre communauté</Text>
-        
+        <Text style={styles.title}>Créer votre compte </Text>
+        <Text style={styles.subtitle}>Remplissez les informations</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Matricule</Text>
+          <TextInput
+            style={styles.input}
+            value={id}
+            onChangeText={setId}
+            placeholder="Ex: USER001"
+            placeholderTextColor="#A1A1AA"
+          />
+        </View>
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Nom & Prénom</Text>
-          <TextInput 
-            style={styles.input} 
-            value={nomPrenom} 
+          <TextInput
+            style={styles.input}
+            value={nom_prenom}
             onChangeText={setNomPrenom}
             placeholder="Jean Dupont"
+            maxLength={30}
             placeholderTextColor="#A1A1AA"
           />
         </View>
-        
+
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput 
-            style={styles.input} 
-            value={login} 
-            onChangeText={setLogin}
-            placeholder="votre@email.com"
+          <Text style={styles.inputLabel}>Téléphone</Text>
+          <TextInput
+            style={styles.input}
+            value={telephone}
+            onChangeText={handlePhoneChange}
+            placeholder="0700000000"
             placeholderTextColor="#A1A1AA"
-            autoCapitalize="none"
-            keyboardType="email-address"
+            keyboardType="phone-pad"
+            maxLength={10}
           />
         </View>
-        
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Mot de passe</Text>
-          <TextInput 
-            secureTextEntry 
-            style={styles.input} 
-            value={motDePass} 
-            onChangeText={setMotDePass}
-            placeholder="••••••••"
-            placeholderTextColor="#A1A1AA"
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              value={mdp}
+              onChangeText={setMdp}
+              placeholder="••••"
+              placeholderTextColor="#A1A1AA"
+              secureTextEntry={!showPassword}
+              maxLength={4}
+              keyboardType="number-pad"
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Feather name={showPassword ? 'eye' : 'eye-off'} size={22} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <TouchableOpacity style={styles.button} onPress={handleInscription}>
-          <Text style={styles.buttonText}>S'inscrire</Text>
+
+        <TouchableOpacity style={styles.button} onPress={ValiderUtilisateur}>
+          <Text style={styles.buttonText}>Enregistrer</Text>
         </TouchableOpacity>
-        
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Déjà membre ? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Connexion')}>
-            <Text style={styles.footerLink}>Se connecter</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );
@@ -72,37 +139,34 @@ export default function Inscription({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
     padding: 20,
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     borderRadius: 24,
     padding: 32,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 10,
     color: '#1E293B',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
-    marginBottom: 32,
+    marginBottom: 24,
     textAlign: 'center',
   },
   inputContainer: {
@@ -124,6 +188,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     color: '#1E293B',
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    height: 56,
+    justifyContent: 'space-between',
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1E293B',
+  },
   button: {
     backgroundColor: '#3B82F6',
     borderRadius: 12,
@@ -140,21 +220,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  footerText: {
-    color: '#64748B',
-    fontSize: 14,
-  },
-  footerLink: {
-    color: '#3B82F6',
-    fontSize: 14,
     fontWeight: '600',
   },
 });
