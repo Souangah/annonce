@@ -84,7 +84,7 @@ export default function Menu({ navigation, route }) {
 
         <TouchableOpacity 
           style={styles.menuItem} 
-          onPress={() => navigation.navigate('ProfilUtilisateu')}
+          onPress={() => navigation.navigate('ProfilUtilisateur')}
         >
           <Icon name="person-outline" size={22} color="#000000" /> 
           <Text style={styles.menuLabel}>Profil</Text>

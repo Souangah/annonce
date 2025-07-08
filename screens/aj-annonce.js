@@ -142,6 +142,7 @@ export default function AjoutAnnonce() {
 
       const result = await response.text();
       Alert.alert("Réponse du serveur", result);
+      console.log(result);
       
       // Réinitialisation du formulaire
       setTitre('');
@@ -154,113 +155,11 @@ export default function AjoutAnnonce() {
       Id_Annonce(generateId());
     } catch (error) {
    
-      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi');
+      Alert.alert('Erreur', error);
     }
   };
 
-  // LES CODES DU DG
-      // Function to register for push notifications
-    const registerForPushNotificationsAsync = async () => {
-      try {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        
-        if (finalStatus !== 'granted') {
-          console.log('Permission for notifications not granted');
-          return null;
-        }
-  
-        const token = (await Notifications.getExpoPushTokenAsync()).data;
-        return token;
-      } catch (error) {
-        console.error('Error getting push token:', error);
-        return null;
-      }
-    };
-  
-      // Configuration des notifications
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
-  
-    // Function to setup notification listeners
-     const setupNotificationListeners = () => {
-      const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-        Alert.alert(
-          notification.request.content.title || 'Notification',
-          notification.request.content.body
-        );
-      });
-      const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response);
-    });
-      
-      return () => {
-        notificationListener.remove();
-        responseListener.remove();
-      };
-    };
-  
-  
-    // Function to send token to server
-    const sendTokenToServer = async (token) => {
-      try {
-  
-        const response = await fetch('https://epencia.net/app/souangah/token.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            utilisateur_id: user.user_id,
-            push_token: token,
-          }),
-        });
-        const result = await response.json();
-        console.log('Token envoyé au serveur:', result);
-      } catch (error) {
-        console.error('Erreur lors de l\'envoi du token:', error);
-      }
-    };
-
-    useEffect(() => {
-
-    // Setup push notifications
-    registerForPushNotificationsAsync().then(token => {
-      if (token) {
-        console.log('Push token:', token);
-        sendTokenToServer(token);
-      }
-    });
-
-    // Configure notification listeners
-    const unsubscribe = setupNotificationListeners(
-      (notification) => {
-        setNotification(notification);
-        Alert.alert(
-          notification.request.content.title || 'Notification',
-          notification.request.content.body
-        );
-      },
-      (response) => {
-        console.log('Notification interaction:', response);
-      }
-    );
-
-
-      unsubscribe();
-
-  }, []);
+ 
 
   return (
     <ScrollView style={styles.container}>

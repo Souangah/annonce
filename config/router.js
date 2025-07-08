@@ -7,6 +7,10 @@ import Menu from '../screens/menu';
 import AjoutAnnonce from '../screens/aj-annonce';
 import ListeAnnonces from '../screens/liste-annonce';
 import ProfilUtilisateur from '../screens/profil';
+import Accueil from '../screens/accueil';
+import NotificationPush from './NotificationPush';
+import { navigationRef } from './NotificationPush';
+import DetailsAnnonce from '../screens/details-annonce';
 
 
 
@@ -14,14 +18,17 @@ const Stack = createStackNavigator();
 
 export default function Router() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Connexion">
+    <NavigationContainer ref={navigationRef}>
+       <NotificationPush />
+      <Stack.Navigator initialRouteName="Accueil">
         <Stack.Screen name="Connexion" component={Connexion} />
         <Stack.Screen name="Inscription" component={Inscription} />
         <Stack.Screen name="Menu" component={Menu} />
         <Stack.Screen name="AjouterAnnonce" component={AjoutAnnonce} />
         <Stack.Screen name="ListeAnnonces" component={ListeAnnonces} />
          <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
+         <Stack.Screen name="Accueil" component={Accueil} />
+         <Stack.Screen name="Details d'annonce" component={DetailsAnnonce} />
       </Stack.Navigator>
     </NavigationContainer>
   );

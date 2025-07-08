@@ -13,7 +13,7 @@ export default function ListeAnnonce({ navigation }) {
 
   const getAnnonce = async () => {
     try {
-      const response = await fetch('https://epencia.net/app/souangah/liste-annonce.php');
+      const response = await fetch('https://epencia.net/app/souangah/details-annonce.php?id_annonce=${id_annonce}');
       const result = await response.json();
       setListe(result);
     } catch (error) {
@@ -31,10 +31,10 @@ export default function ListeAnnonce({ navigation }) {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <Image
-        source={{ uri: `https://epencia.net/app/souangah/get.image.php?id=${item.id_annonce}` }}
-        style={styles.image}
-      />
+      <Image 
+          source={{ uri: `data:${annonce.type};base64,${annonce.photo64}` }}
+          style={styles.image}
+        />
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>{item.titre}</Text>
@@ -57,7 +57,7 @@ export default function ListeAnnonce({ navigation }) {
           {/* ➕ Bouton "Voir détail" */}
           <TouchableOpacity
             style={styles.detailButton}
-            onPress={() => navigation.navigate('DetailAnnonce', { annonce: item })}
+            onPress={() => navigation.navigate('DetailsAnnonce', { annonce: item })}
           >
             <Text style={styles.detailText}>Voir détail</Text>
           </TouchableOpacity>

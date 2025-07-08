@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { GlobalContext } from '../config/GlobalUser';
+import Feather from 'react-native-vector-icons/Feather';
+
 
 export default function ProfilUtilisateur({ route }) {
   
@@ -57,7 +59,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: 'center',
   },
   avatarContainer: {
@@ -65,15 +67,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 10,
     borderRadius: 50,
+    margin: 5,
+    padding: 8,
+
   },
   infoContainer: {
     marginBottom: 15,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     marginBottom: 5,
     color: '#333',
   },
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     backgroundColor: '#fff',
   },
   passwordContainer: {
