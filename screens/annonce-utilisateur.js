@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {View,Text,FlatList,Image,StyleSheet,TouchableOpacity,ActivityIndicator} from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlobalContext } from '../config/GlobalUser';
 
-export default function ListeAnnonce({ navigation }) {
+export default function AnnonceUtilisateur({ navigation }) {
   const [liste, setListe] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [user] = useContext(GlobalContext);
 
   useEffect(() => {
     getAnnonce();
@@ -13,9 +16,13 @@ export default function ListeAnnonce({ navigation }) {
 
   const getAnnonce = async () => {
     try {
-      const response = await fetch('https://epencia.net/app/souangah/liste-annonce.php');
+      const response = await fetch(`https://epencia.net/app/souangah/annonce-utilisateur.php?user_id=${user.id}`);
       const result = await response.json();
-      setListe(result);
+      if (result.status === 'success') {
+        setListe(result.annonces);
+      } else {
+        setListe([]);
+      }
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -32,10 +39,9 @@ export default function ListeAnnonce({ navigation }) {
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Image 
-          source={{ uri: `data:${item.type};base64,${item.photo64}` }}
-          style={styles.image}
-        />
-
+        source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+        style={styles.image}
+      />
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>{item.titre}</Text>
         <View style={styles.priceContainer}>
@@ -48,16 +54,13 @@ export default function ListeAnnonce({ navigation }) {
             <Text style={styles.prixNormal}>{item.prix_normal} FCFA</Text>
           )}
         </View>
-
         <View style={styles.footer}>
           <Text style={styles.date}>
-            {item.date_annonce || item.date} à {item.heure || item.heure}
+            {item.date} à {item.heure}
           </Text>
-
-          {/* ➕ Bouton "Voir détail" */}
           <TouchableOpacity
             style={styles.detailButton}
-            onPress={() => navigation.navigate("Details d'annonce")}
+            onPress={() => navigation.navigate("Details d'annonce", { id_annonce: item.id_annonce })}
           >
             <Text style={styles.detailText}>Voir détail</Text>
           </TouchableOpacity>
@@ -78,7 +81,7 @@ export default function ListeAnnonce({ navigation }) {
     <FlatList
       data={liste}
       renderItem={renderItem}
-      keyExtractor={(item) => item.id_annonce}
+      keyExtractor={(item) => item.id_annonce.toString()}
       contentContainerStyle={styles.container}
       refreshing={refreshing}
       onRefresh={handleRefresh}
@@ -91,6 +94,7 @@ export default function ListeAnnonce({ navigation }) {
     />
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     padding: 10,
@@ -115,21 +119,16 @@ const styles = StyleSheet.create({
     color: '#222',
     marginBottom: 4,
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     marginBottom: 10,
   },
   prixOriginal: {
     fontSize: 14,
     color: '#999',
     textDecorationLine: 'line-through',
+    marginRight: 10,
   },
   prixPromo: {
     fontSize: 16,

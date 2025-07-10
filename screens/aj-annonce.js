@@ -1,61 +1,61 @@
-import React, { useState, useEffect,useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { GlobalContext } from '../config/GlobalUser';
-import * as Notifications from 'expo-notifications';
 
 export default function AjoutAnnonce() {
-  // États pour les champs du formulaire
+  // États
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
-  const [date, setDate] = useState(new Date());
-  const [heure, setHeure] = useState(new Date());
   const [id_annonce, Id_Annonce] = useState('');
-  // États pour les sélecteurs de date/heure
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [prix_promo, setPrix_Promo] = useState('');
   const [prix_normal, setPrix_Normal] = useState('');
+  const [user, setUser] = useContext(GlobalContext);
 
-  // user
-    const [user, setUser] = useContext(GlobalContext);
-
-  // Générer un ID aléatoire lors du premier rendu
   useEffect(() => {
     Id_Annonce(generateId());
   }, []);
 
-  // Fonction pour générer un ID aléatoire
   const generateId = () => {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   };
 
-  // Fonction pour formater et valider les prix (nombres entiers)
   const handlePriceChange = (text, setPrice) => {
-    // Supprime tous les caractères non numériques
     const numericValue = text.replace(/[^0-9]/g, '');
     setPrice(numericValue);
   };
 
-  // Fonction pour afficher le prix formaté
   const displayFormattedPrice = (price) => {
     if (!price) return '0';
     return parseInt(price).toLocaleString('fr-FR');
   };
 
-  // Sélection d'images
-  const choisirImage = async () => {
-    if (images.length >= 1) {
-      Alert.alert('Maximum atteint', 'Vous ne pouvez ajouter que 1 images maximum');
+  // Prendre une photo
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission requise", "Autorisez l'accès à la caméra pour continuer.");
       return;
     }
 
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission refusée', 'Désolé, nous avons besoin des permissions pour accéder à vos photos.');
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImages([result.assets[0].uri]);
+    }
+  };
+
+  // Choisir une image
+  const choisirImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission requise', 'Autorisez l’accès à la galerie pour continuer.');
       return;
     }
 
@@ -67,48 +67,19 @@ export default function AjoutAnnonce() {
     });
 
     if (!result.canceled) {
-      setImages([...images, result.assets[0].uri]);
+      setImages([result.assets[0].uri]);
     }
   };
 
-  // Supprimer une image
-  const supprimerImage = (index) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
+  const supprimerImage = () => {
+    setImages([]);
   };
 
-  // Gestion du changement de date
-  const onChangeDate = (event, selectedDate) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
-  };
-
-  // Gestion du changement d'heure
-  const onChangeTime = (event, selectedTime) => {
-    setShowTimePicker(false);
-    if (selectedTime) {
-      setHeure(selectedTime);
-    }
-  };
-
-  // Validation et soumission du formulaire
   const validerAnnonce = async () => {
     if (!titre || !description) {
       Alert.alert('Champs manquants', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
-
-    if (images.length === 0) {
-      Alert.alert('Image manquante', 'Veuillez ajouter au moins une image');
-      return;
-    }
-
-    // Formatage de la date et de l'heure
-    const dateISO = date.toISOString().split('T')[0];
-    const heureISO = heure.toTimeString().split(' ')[0];
 
     const formData = new FormData();
     formData.append("id_annonce", id_annonce);
@@ -116,16 +87,10 @@ export default function AjoutAnnonce() {
     formData.append("description", description);
     formData.append("prix_normal", prix_normal);
     formData.append("prix_promo", prix_promo);
-    formData.append("date", dateISO);
-    formData.append("heure", heureISO);
 
-
-    
-    
-    // Ajout des images
     images.forEach((uri, index) => {
       formData.append("sai_photo", {
-        uri: uri,
+        uri,
         name: `image_${index}.jpg`,
         type: 'image/jpeg',
       });
@@ -134,50 +99,31 @@ export default function AjoutAnnonce() {
     try {
       const response = await fetch("https://epencia.net/app/souangah/AjouterAnnonce.php", {
         method: 'POST',
-        body: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        body: formData,
       });
 
       const result = await response.text();
       Alert.alert("Réponse du serveur", result);
       console.log(result);
-      
-      // Réinitialisation du formulaire
+
       setTitre('');
       setDescription('');
       setPrix_Normal('');
       setPrix_Promo('');
       setImages([]);
-      setDate(new Date());
-      setHeure(new Date());
       Id_Annonce(generateId());
     } catch (error) {
-   
-      Alert.alert('Erreur', error);
+      Alert.alert('Erreur', error.toString());
     }
   };
 
- 
-
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.titre}>Ajouter une nouvelle annonce</Text>
+      <Text style={styles.titre}>Publier une annonce</Text>
 
-      {/* Champ ID Annonce (lecture seule) */}
-      {false &&(
-      <View style={styles.section}>
-        <Text style={styles.label}>ID Annonce</Text>
-        <TextInput
-          style={[styles.input, styles.disabledInput,]}
-          value={id_annonce}
-          editable={false}
-        />
-      </View>
-      )}
-
-      {/* Champ Titre */}
       <View style={styles.section}>
         <Text style={styles.label}>Titre*</Text>
         <TextInput
@@ -188,7 +134,6 @@ export default function AjoutAnnonce() {
         />
       </View>
 
-      {/* Champ Description */}
       <View style={styles.section}>
         <Text style={styles.label}>Description*</Text>
         <TextInput
@@ -201,7 +146,6 @@ export default function AjoutAnnonce() {
         />
       </View>
 
-      {/* Champ Prix Normal */}
       <View style={styles.section}>
         <Text style={styles.label}>Prix Normal</Text>
         <TextInput
@@ -216,7 +160,6 @@ export default function AjoutAnnonce() {
         </Text>
       </View>
 
-      {/* Champ Prix Promotionnel */}
       <View style={styles.section}>
         <Text style={styles.label}>Prix Promotionnel</Text>
         <TextInput
@@ -231,7 +174,6 @@ export default function AjoutAnnonce() {
         </Text>
       </View>
 
-      {/* Affichage de la réduction si les deux prix sont renseignés */}
       {prix_normal && prix_promo && (
         <View style={styles.section}>
           <Text style={styles.discountText}>
@@ -240,76 +182,36 @@ export default function AjoutAnnonce() {
         </View>
       )}
 
-      
-      
-    {false && (
-  <View style={styles.section}>
-    <Text style={styles.label}>Date</Text>
-    <TouchableOpacity 
-      style={styles.input} 
-      onPress={() => setShowDatePicker(true)}
-    >
-      <Text>{date.toLocaleDateString('fr-FR')}</Text>
-    </TouchableOpacity>
-    {showDatePicker && (
-      <DateTimePicker
-        value={date}
-        mode="date"
-        display="default"
-        onChange={onChangeDate}
-      />
-    )}
-  </View>
-)}
-
-     {/* Sélecteur d'Heure */}
-
-      {false && (
-      <View style={styles.section}>
-        <Text style={styles.label}>Heure</Text>
-        <TouchableOpacity 
-          style={styles.input} 
-          onPress={() => setShowTimePicker(true)}
-        >
-          <Text>{heure.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Text>
-        </TouchableOpacity>
-        {showTimePicker && (
-          <DateTimePicker
-            value={heure}
-            mode="time"
-            display="default"
-            onChange={onChangeTime}
-          />
-        )}
-      </View>
-      )}
-
       {/* Sélection d'Images */}
       <View style={styles.section}>
-        <Text style={styles.label}>Photos* (max 1)</Text>
+        <Text style={styles.label}>Photo (max 1)</Text>
         <View style={styles.imagesContainer}>
           {images.map((uri, index) => (
             <View key={index} style={styles.imageWrapper}>
               <Image source={{ uri }} style={styles.image} />
               <TouchableOpacity 
                 style={styles.deleteButton} 
-                onPress={() => supprimerImage(index)}
+                onPress={supprimerImage}
               >
                 <Ionicons name="close" size={20} color="white" />
               </TouchableOpacity>
             </View>
           ))}
-          
-          {images.length < 5 && (
-            <TouchableOpacity style={styles.addImageButton} onPress={choisirImage}>
-              <Ionicons name="camera" size={30} color="#666" />
-              <Text style={styles.addImageText}>Ajouter une photo</Text>
-            </TouchableOpacity>
+          {images.length === 0 && (
+            <>
+              <TouchableOpacity style={styles.addImageButton} onPress={takePhoto}>
+                <Ionicons name="camera" size={25} color="#666" />
+                <Text style={styles.addImageText}>Prendre une photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addImageButton} onPress={choisirImage}>
+                <Ionicons name="images" size={25} color="#666" />
+                <Text style={styles.addImageText}>Galerie</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </View>
 
-      {/* Bouton de validation */}
       <TouchableOpacity style={styles.validerButton} onPress={validerAnnonce}>
         <Text style={styles.validerButtonText}>Publier l'annonce</Text>
       </TouchableOpacity>
@@ -322,7 +224,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     backgroundColor: '#f5f5f5',
-    bottom: 13,
   },
   titre: {
     fontSize: 24,
@@ -348,10 +249,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  disabledInput: {
-    backgroundColor: '#eee',
-    color: '#666',
-  },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
@@ -374,8 +271,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   imageWrapper: {
-    width: 100,
-    height: 100,
+    width: 300,
+    height: 200,
     marginRight: 10,
     marginBottom: 10,
     position: 'relative',
@@ -397,14 +294,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addImageButton: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 70,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
+    marginRight: 15,
   },
   addImageText: {
     marginTop: 5,
@@ -418,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
-    marginBottom: 40,
+    marginBottom: 60,
   },
   validerButtonText: {
     color: 'white',
