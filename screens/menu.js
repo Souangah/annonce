@@ -1,8 +1,7 @@
-import React, { useLayoutEffect, useContext, useRef, useMemo } from 'react';
+import React, { useLayoutEffect, useContext} from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
-// Remplacement ici :
 import { Ionicons } from '@expo/vector-icons';
-import BottomSheet from '@gorhom/bottom-sheet';
+
 
 import { GlobalContext } from '../config/GlobalUser';
 
@@ -11,21 +10,6 @@ const { width } = Dimensions.get('window');
 export default function Menu({ navigation }) {
   const [user, setUser] = useContext(GlobalContext);
 
-  const bottomSheetRef = useRef(null);
-  const snapPoints = useMemo(() => ['25%'], []);
-
-  const openSheet = () => {
-    bottomSheetRef.current?.expand();
-  };
-
-  const handleOption = (option) => {
-    bottomSheetRef.current?.close();
-    if (option === 'toutes') {
-      navigation.navigate('AnnonceUtilisateur');
-    } else if (option === 'publiees') {
-      navigation.navigate('ListeAnnonce');
-    }
-  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -55,7 +39,6 @@ export default function Menu({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Contenu principal */}
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Bonjour,</Text>
@@ -64,7 +47,6 @@ export default function Menu({ navigation }) {
         </View>
       </View>
 
-      {/* Menu en bas */}
       <View style={styles.bottomMenu}>
         <TouchableOpacity 
           style={styles.menuItem}
@@ -74,9 +56,12 @@ export default function Menu({ navigation }) {
           <Text style={styles.menuLabel}>Accueil</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={handleOption}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('ListeAnnonces')}
+        >
           <Ionicons name="briefcase-outline" size={22} color="#000" />
-          <Text style={styles.menuLabel}>Mes annonces</Text>
+          <Text style={styles.menuLabel}>Tout les Annonces</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -88,6 +73,14 @@ export default function Menu({ navigation }) {
 
         <TouchableOpacity 
           style={styles.menuItem}
+          onPress={() => navigation.navigate('AnnonceUtilisateur')}
+        >
+          <Ionicons name="briefcase-outline" size={22} color="#000" />
+          <Text style={styles.menuLabel}> Mes Annonces</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.menuItem}
           onPress={() => navigation.navigate('ProfilUtilisateur')}
         >
           <Ionicons name="person-outline" size={22} color="#000000" />
@@ -95,29 +88,7 @@ export default function Menu({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* BottomSheet */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-      >
-        <View style={styles.sheetContent}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => handleOption('toutes')}
-          >
-            <Text style={styles.optionText}>Toutes mes annonces</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => handleOption('publiees')}
-          >
-            <Text style={styles.optionText}>Annonces publiées</Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheet>
+  
     </View>
   );
 }
