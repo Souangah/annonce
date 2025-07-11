@@ -10,7 +10,7 @@ export default function DetailsAnnonce({ route }) {
   useEffect(() => {
     const fetchAnnonce = async () => {
       try {
-        const response = await fetch(`https://epencia.net/app/souangah/details-annonce.php?id_annonce=${id_annonce}`);
+        const response = await fetch(`https://epencia.net/app/souangah/annonce/details-annonce.php?id_annonce=${id_annonce}`);
         const data = await response.json();
         setAnnonce(data[0]);
       } catch (error) {

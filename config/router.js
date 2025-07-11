@@ -21,7 +21,7 @@ export default function Router() {
   return (
     <NavigationContainer ref={navigationRef}>
        <NotificationPush />
-      <Stack.Navigator initialRouteName="Accueil">
+      <Stack.Navigator initialRouteName="Connexion">
         <Stack.Screen name="Connexion" component={Connexion} />
         <Stack.Screen name="Inscription" component={Inscription} />
         <Stack.Screen name="Menu" component={Menu} />

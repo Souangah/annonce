@@ -1,15 +1,12 @@
-import React, { useLayoutEffect, useContext} from 'react';
+import React, { useLayoutEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-
 import { GlobalContext } from '../config/GlobalUser';
 
 const { width } = Dimensions.get('window');
 
 export default function Menu({ navigation }) {
   const [user, setUser] = useContext(GlobalContext);
-
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -39,11 +36,18 @@ export default function Menu({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Bonjour,</Text>
-          <Text style={styles.username}>{user?.nom_prenom}</Text>
-          <Text style={styles.subtitle}>Que souhaitez-vous faire aujourd'hui ?</Text>
+      <View style={styles.compte}>
+        <Text style={styles.title}>Mon solde</Text>
+        <Text style={styles.solde}>{user?.solde ?? 0} FCFA</Text>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={[styles.button, styles.retrait]}>
+            <Text style={styles.buttonText}>Retrait</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.recharge]}>
+            <Text style={styles.buttonText}>Recharger</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -76,7 +80,7 @@ export default function Menu({ navigation }) {
           onPress={() => navigation.navigate('AnnonceUtilisateur')}
         >
           <Ionicons name="briefcase-outline" size={22} color="#000" />
-          <Text style={styles.menuLabel}> Mes Annonces</Text>
+          <Text style={styles.menuLabel}>Mes Annonces</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -87,39 +91,59 @@ export default function Menu({ navigation }) {
           <Text style={styles.menuLabel}>Profil</Text>
         </TouchableOpacity>
       </View>
-
-  
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, padding: 24, paddingTop: 40 },
-  header: { marginBottom: 32 },
-  greeting: { fontSize: 24, color: '#555', fontWeight: '300' },
-  username: { fontSize: 28, color: '#000', fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#888' },
-  mainActionButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#000',
+  container: { flex: 1, backgroundColor: '#f0f0f0' },
+  compte: {
+    flex: 1,
+    justifyContent: 'top',
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    marginTop: -25,
+    padding: 20,
   },
+  title: {
+    fontSize: 24,
+    fontWeight: '300',
+    marginBottom: 10,
+    color: '#333',
+  },
+  solde: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '00000',
+    marginBottom: 30,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 20, // si ton RN le supporte (>=0.71)
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  retrait: {
+    backgroundColor: '#f44336',
+  },
+  recharge: {
+    backgroundColor: '#2196F3',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  // ton menu déjà existant
   bottomMenu: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     paddingBottom: 24,
@@ -138,6 +162,20 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontWeight: '500',
   },
+  mainActionButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    marginTop: -25,
+  },
   notificationBadge: {
     position: 'relative',
   },
@@ -149,22 +187,5 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: '#FF5722',
-  },
-  sheetContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  option: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-  },
-  optionText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

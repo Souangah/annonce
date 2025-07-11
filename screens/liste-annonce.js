@@ -13,7 +13,7 @@ export default function ListeAnnonce({ navigation }) {
 
   const getAnnonce = async () => {
     try {
-      const response = await fetch('https://epencia.net/app/souangah/liste-annonce.php');
+      const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
       const result = await response.json();
       setListe(result);
     } catch (error) {

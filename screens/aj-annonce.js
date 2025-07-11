@@ -13,6 +13,8 @@ export default function AjoutAnnonce() {
   const [prix_promo, setPrix_Promo] = useState('');
   const [prix_normal, setPrix_Normal] = useState('');
   const [user, setUser] = useContext(GlobalContext);
+  const[audience, setAudience] = useState();
+  const[prix_annonce, setPrix_Annonce] = useState();
 
   useEffect(() => {
     Id_Annonce(generateId());
@@ -87,6 +89,9 @@ export default function AjoutAnnonce() {
     formData.append("description", description);
     formData.append("prix_normal", prix_normal);
     formData.append("prix_promo", prix_promo);
+    formData.append("user_id", user.user_id);
+    formData.append("audience", audience);
+    formData.append("prix_annonce", prix_annonce);
 
     images.forEach((uri, index) => {
       formData.append("sai_photo", {
@@ -97,7 +102,7 @@ export default function AjoutAnnonce() {
     });
 
     try {
-      const response = await fetch("https://epencia.net/app/souangah/AjouterAnnonce.php", {
+      const response = await fetch("https://epencia.net/app/souangah/annonce/AjouterAnnonce.php", {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -146,6 +151,7 @@ export default function AjoutAnnonce() {
         />
       </View>
 
+      <View style={styles.row}>
       <View style={styles.section}>
         <Text style={styles.label}>Prix Normal</Text>
         <TextInput
@@ -155,9 +161,6 @@ export default function AjoutAnnonce() {
           placeholder="Entrez le prix normal"
           keyboardType="numeric"
         />
-        <Text style={styles.formattedPrice}>
-          {displayFormattedPrice(prix_normal)} FCFA
-        </Text>
       </View>
 
       <View style={styles.section}>
@@ -169,22 +172,21 @@ export default function AjoutAnnonce() {
           placeholder="Entrez le prix promo"
           keyboardType="numeric"
         />
-        <Text style={styles.formattedPrice}>
-          {displayFormattedPrice(prix_promo)} FCFA
-        </Text>
+ 
+      </View>
       </View>
 
       {prix_normal && prix_promo && (
         <View style={styles.section}>
           <Text style={styles.discountText}>
-            Réduction: {Math.round((1 - prix_promo/prix_normal) * 100)}%
+            Réduction: {Math.round(( prix_promo-prix_normal) * 100)}%
           </Text>
         </View>
       )}
 
       {/* Sélection d'Images */}
       <View style={styles.section}>
-        <Text style={styles.label}>Photo (max 1)</Text>
+        <Text style={styles.label}>Photo</Text>
         <View style={styles.imagesContainer}>
           {images.map((uri, index) => (
             <View key={index} style={styles.imageWrapper}>
@@ -210,6 +212,26 @@ export default function AjoutAnnonce() {
             </>
           )}
         </View>
+      </View>
+
+          <View style={styles.section}>
+        <Text style={styles.label}>Audience*</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Titre de l'annonce"
+          value={audience}
+          onChangeText={setAudience}
+        />
+      </View>
+
+        <View style={styles.section}>
+        <Text style={styles.label}>Prix*</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Titre de l'annonce"
+          value={prix_annonce}
+          onChangeText={setPrix_Annonce}
+        />
       </View>
 
       <TouchableOpacity style={styles.validerButton} onPress={validerAnnonce}>
@@ -323,4 +345,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+
+    row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // espace entre les deux
+     marginHorizontal: 5,
+  }
 });

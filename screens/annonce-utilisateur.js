@@ -11,12 +11,13 @@ export default function AnnonceUtilisateur({ navigation }) {
   const [user] = useContext(GlobalContext);
 
   useEffect(() => {
+    
     getAnnonce();
   }, []);
 
   const getAnnonce = async () => {
     try {
-      const response = await fetch(`https://epencia.net/app/souangah/annonce-utilisateur.php?user_id=${user.id}`);
+      const response = await fetch(`https://epencia.net/app/souangah/annonce/annonce-utilisateur.php?user_id=${user.user_id}`);
       const result = await response.json();
       if (result.status === 'success') {
         setListe(result.annonces);
