@@ -12,6 +12,8 @@ import NotificationPush from './NotificationPush';
 import { navigationRef } from './NotificationPush';
 import DetailsAnnonce from '../screens/details-annonce';
 import AnnonceUtilisateur from '../screens/annonce-utilisateur';
+import Rechargement from '../screens/rechargement';
+import Retrait from '../screens/retrait';
 
 
 
@@ -29,8 +31,10 @@ export default function Router() {
         <Stack.Screen name="ListeAnnonces" component={ListeAnnonces} />
          <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
          <Stack.Screen name="Accueil" component={Accueil} />
-         <Stack.Screen name="Details d'annonce" component={DetailsAnnonce} />
+         <Stack.Screen name="DetailsAnnonce" component={DetailsAnnonce} />
          <Stack.Screen name="AnnonceUtilisateur" component={AnnonceUtilisateur} />
+         <Stack.Screen name="Rechargement" component={Rechargement} />
+         <Stack.Screen name="Retrait" component={Retrait} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -10,7 +10,7 @@ export default function AnnonceUtilisateur({ navigation }) {
 
   const [user] = useContext(GlobalContext);
 
-  useEffect(() => {
+  useEffect(() => { 
     
     getAnnonce();
   }, []);
@@ -55,15 +55,21 @@ export default function AnnonceUtilisateur({ navigation }) {
             <Text style={styles.prixNormal}>{item.prix_normal} FCFA</Text>
           )}
         </View>
-        <View style={styles.footer}>
-          <Text style={styles.date}>
-            {item.date} à {item.heure}
-          </Text>
+       <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.detailButton}
-            onPress={() => navigation.navigate("Details d'annonce", { id_annonce: item.id_annonce })}
+            style={[styles.actionButton,  { backgroundColor: '#3378dfff' }]}
+            onPress={() => Linking.openURL(`tel:${item.telephone}`)}
           >
-            <Text style={styles.detailText}>Voir détail</Text>
+            <Ionicons name="call-outline" size={20} color="white" />
+            <Text style={styles.actionText}>Appeler</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#11ae21ff' }]}
+            onPress={() => Linking.openURL(`https://wa.me/${item.telephone}`)}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="white" />
+            <Text style={styles.actionText}>WhatsApp</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -176,5 +182,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#999',
     fontSize: 16,
+  },
+
+    actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
 });

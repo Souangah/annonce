@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  ScrollView
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function NouveauUtilisateur({ navigation, route }) {
@@ -56,7 +64,7 @@ export default function NouveauUtilisateur({ navigation, route }) {
         setNomPrenom('');
         setTelephone('');
         setMdp('');
-        navigation.navigate('Connexion');  // ← redirection vers écran Connexion
+        navigation.navigate('Connexion');
       } else {
         Alert.alert("Erreur", result.message || "Une erreur est survenue.");
       }
@@ -68,93 +76,78 @@ export default function NouveauUtilisateur({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Créer votre compte </Text>
-        <Text style={styles.subtitle}>Remplissez les informations</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Créer votre compte</Text>
+      <Text style={styles.subtitle}>Remplissez les informations</Text>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Matricule</Text>
-          <TextInput
-            style={styles.input}
-            value={id}
-            onChangeText={setId}
-            placeholder="Ex: USER001"
-            placeholderTextColor="#A1A1AA"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Nom & Prénom</Text>
-          <TextInput
-            style={styles.input}
-            value={nom_prenom}
-            onChangeText={setNomPrenom}
-            placeholder="Jean Dupont"
-            maxLength={30}
-            placeholderTextColor="#A1A1AA"
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Téléphone</Text>
-          <TextInput
-            style={styles.input}
-            value={telephone}
-            onChangeText={handlePhoneChange}
-            placeholder="0700000000"
-            placeholderTextColor="#A1A1AA"
-            keyboardType="phone-pad"
-            maxLength={10}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Mot de passe</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={mdp}
-              onChangeText={setMdp}
-              placeholder="••••"
-              placeholderTextColor="#A1A1AA"
-              secureTextEntry={!showPassword}
-              maxLength={4}
-              keyboardType="number-pad"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Feather name={showPassword ? 'eye' : 'eye-off'} size={22} color="#94A3B8" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={ValiderUtilisateur}>
-          <Text style={styles.buttonText}>Enregistrer</Text>
-        </TouchableOpacity>
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Matricule</Text>
+        <TextInput
+          style={styles.input}
+          value={id}
+          onChangeText={setId}
+          placeholder="Ex: USER001"
+          placeholderTextColor="#A1A1AA"
+        />
       </View>
-    </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Nom & Prénom</Text>
+        <TextInput
+          style={styles.input}
+          value={nom_prenom}
+          onChangeText={setNomPrenom}
+          placeholder="Jean Dupont"
+          maxLength={30}
+          placeholderTextColor="#A1A1AA"
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Téléphone</Text>
+        <TextInput
+          style={styles.input}
+          value={telephone}
+          onChangeText={handlePhoneChange}
+          placeholder="0700000000"
+          placeholderTextColor="#A1A1AA"
+          keyboardType="phone-pad"
+          maxLength={10}
+        />
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Mot de passe</Text>
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            value={mdp}
+            onChangeText={setMdp}
+            placeholder="••••"
+            placeholderTextColor="#A1A1AA"
+            secureTextEntry={!showPassword}
+            maxLength={4}
+            keyboardType="number-pad"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Feather name={showPassword ? 'eye' : 'eye-off'} size={22} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={ValiderUtilisateur}>
+        <Text style={styles.buttonText}>Enregistrer</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    paddingTop: 60,
+    backgroundColor: '#FFFFFF',
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,
@@ -211,11 +204,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 16,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
   buttonText: {
     color: 'white',

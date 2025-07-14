@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {View,Text,FlatList,Image,StyleSheet,TouchableOpacity,ActivityIndicator} from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlobalContext } from '../config/GlobalUser';
 
 export default function ListeAnnonce({ navigation }) {
   const [liste, setListe] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const[user, setUser] = useContext(GlobalContext);
 
   useEffect(() => {
     getAnnonce();
@@ -32,12 +35,14 @@ export default function ListeAnnonce({ navigation }) {
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Image 
-          source={{ uri: `data:${item.type};base64,${item.photo64}` }}
-          style={styles.image}
-        />
+        source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+        style={styles.image}
+        resizeMode="cover"
+      />
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>{item.titre}</Text>
+
         <View style={styles.priceContainer}>
           {item.prix_promo ? (
             <>
@@ -51,15 +56,25 @@ export default function ListeAnnonce({ navigation }) {
 
         <View style={styles.footer}>
           <Text style={styles.date}>
-            {item.date_annonce || item.date} à {item.heure || item.heure}
+            {item.date_annonce || item.date} à {item.heure || item.heure}   durée : {item.duree} days
           </Text>
+        </View>
 
-          {/* ➕ Bouton "Voir détail" */}
+        <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.detailButton}
-            onPress={() => navigation.navigate("Details d'annonce")}
+            style={[styles.actionButton,  { backgroundColor: '#3378dfff' }]}
+            onPress={() => Linking.openURL(`tel:${item.telephone}`)}
           >
-            <Text style={styles.detailText}>Voir détail</Text>
+            <Ionicons name="call-outline" size={20} color="white" />
+            <Text style={styles.actionText}>Appeler</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#11ae21ff' }]}
+            onPress={() => Linking.openURL(`https://wa.me/${item.telephone}`)}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="white" />
+            <Text style={styles.actionText}>WhatsApp</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -91,6 +106,7 @@ export default function ListeAnnonce({ navigation }) {
     />
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     padding: 10,
@@ -98,7 +114,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 18,
     overflow: 'hidden',
     elevation: 2,
   },
@@ -114,11 +130,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -160,6 +171,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 10,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  actionText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 5,
+    fontSize: 12,
   },
   loading: {
     flex: 1,

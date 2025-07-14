@@ -92,6 +92,7 @@ export default function AjoutAnnonce() {
     formData.append("user_id", user.user_id);
     formData.append("audience", audience);
     formData.append("prix_annonce", prix_annonce);
+    formData.append("telephone", user.telephone);
 
     images.forEach((uri, index) => {
       formData.append("sai_photo", {
@@ -179,7 +180,7 @@ export default function AjoutAnnonce() {
       {prix_normal && prix_promo && (
         <View style={styles.section}>
           <Text style={styles.discountText}>
-            Réduction: {Math.round(( prix_promo-prix_normal) * 100)}%
+            Réduction: {Math.round(( (prix_normal-prix_promo)/prix_normal) * 100)}%
           </Text>
         </View>
       )}
@@ -221,6 +222,7 @@ export default function AjoutAnnonce() {
           placeholder="Titre de l'annonce"
           value={audience}
           onChangeText={setAudience}
+          keyboardType='numeric'
         />
       </View>
 
@@ -231,6 +233,7 @@ export default function AjoutAnnonce() {
           placeholder="Titre de l'annonce"
           value={prix_annonce}
           onChangeText={setPrix_Annonce}
+          keyboardType='numeric'
         />
       </View>
 
