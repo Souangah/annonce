@@ -197,4 +197,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
   },
+    actionText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 5,
+    fontSize: 12,
+  },
 });

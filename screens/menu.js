@@ -37,7 +37,7 @@ export default function Menu({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Carte solde cliquable */}
+      {/* Carte solde */}
       <TouchableOpacity onPress={() => setShowSolde(!showSolde)} activeOpacity={0.8}>
         <View style={styles.soldeCard}>
           <View style={styles.cardHeaderOnly}>
@@ -62,7 +62,7 @@ export default function Menu({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Transactions récentes */}
+      {/* Transactions */}
       <View style={styles.transactionContainer}>
         <Text style={styles.transactionTitle}>Dernières transactions</Text>
         {[
@@ -90,9 +90,9 @@ export default function Menu({ navigation }) {
 
       {/* Menu bas */}
       <View style={styles.bottomMenu}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Plus', 'Options supplémentaires')}>
-          <Ionicons name="home" size={24} color="#000000" />
-          <Text style={styles.menuLabel}>Accueil</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Plus')} >
+          <Ionicons name="person-outline" size={24} color="#000000" />
+          <Text style={styles.menuLabel}>Plus</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ListeAnnonces')}>
@@ -109,9 +109,9 @@ export default function Menu({ navigation }) {
           <Text style={styles.menuLabel}>Mes Annonces</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ProfilUtilisateur')}>
-          <Ionicons name="person-outline" size={22} color="#000000" />
-          <Text style={styles.menuLabel}>Profil</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Parametre')}>
+          <Ionicons name="settings-outline" size={22} color="#000000" />
+          <Text style={styles.menuLabel}>Paramètre</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -141,17 +141,20 @@ const styles = StyleSheet.create({
 
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 20,
+    paddingHorizontal: 20,
   },
   button: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 8,
     elevation: 2,
+    marginHorizontal: 5,
   },
   retrait: { backgroundColor: '#0c0302ff' },
   recharge: { backgroundColor: '#070d12ff' },

@@ -1,13 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { GlobalContext } from '../config/GlobalUser';
 
 export default function DetailsAnnonce({ route }) {
-  const { id_annonce } = route.params;  // passé depuis la navigation
+  const { id_annonce } = route.params;
   const [annonce, setAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const [user, setUser] = useContext(GlobalContext);
 
-  // Appel API pour récupérer l'annonce
   useEffect(() => {
+    console.log("Réponse du serveur:", user.nom_prenom);
     const fetchAnnonce = async () => {
       try {
         const response = await fetch(`https://epencia.net/app/souangah/annonce/details-annonce.php?id_annonce=${id_annonce}`);
@@ -22,6 +25,29 @@ export default function DetailsAnnonce({ route }) {
 
     fetchAnnonce();
   }, []);
+
+const Valider = async () =>{
+    try {
+        const response = await fetch("https://epencia.net/app/souangah/annonce/gain.php", {
+            method: 'POST',
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify({
+                nom_prenom: user.nom_prenom,
+                id_annonce: id_annonce 
+            })
+            
+        });
+        const data = await response.json();
+        console.log("Réponse du serveur:", data);
+
+        setVisible(false);
+    } catch (err) {
+        console.error("Erreur réseau:", err);
+    }
+}
+
 
   if (loading) {
     return (
@@ -40,34 +66,42 @@ export default function DetailsAnnonce({ route }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Image 
-        source={{ uri: `data:${annonce.type};base64,${annonce.photo64}` }}
-        style={styles.image}
-      />
+    <View style={styles.container}>
+      <ScrollView>
+        <Image 
+          source={{ uri: `data:${annonce.type};base64,${annonce.photo64}` }}
+          style={styles.image}
+        />
 
-      <View style={styles.content}>
-        <Text style={styles.title}>{annonce.titre}</Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>{annonce.titre}</Text>
 
-        <Text style={styles.priceNormal}>
-          Prix Normal: {parseFloat(annonce.prix_normal)} FCFA
-        </Text>
-
-        {annonce.prix_promo && (
-          <Text style={styles.pricePromo}>
-            Promo: {parseFloat(annonce.prix_promo)} FCFA
+          <Text style={styles.priceNormal}>
+            Prix Normal: {parseFloat(annonce.prix_normal)} FCFA
           </Text>
-        )}
 
-        <Text style={styles.description}>
-          {annonce.description}
-        </Text>
+          {annonce.prix_promo && (
+            <Text style={styles.pricePromo}>
+              Promo: {parseFloat(annonce.prix_promo)} FCFA
+            </Text>
+          )}
 
-        <Text style={styles.date}>
-          Publié le {annonce.date} à {annonce.heure}
-        </Text>
-      </View>
-    </ScrollView>
+          <Text style={styles.description}>
+            {annonce.description}
+          </Text>
+
+          <Text style={styles.date}>
+            Publié le {annonce.date} à {annonce.heure}
+          </Text>
+        </View>
+      </ScrollView>
+
+      {visible && (
+        <TouchableOpacity style={styles.valider} onPress={Valider}>
+          <Text style={styles.detailTexte}>OK</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -115,4 +149,25 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'right',
   },
+
+  valider: {
+    position: 'absolute',
+    bottom: 50,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#4cf926ff',
+    paddingVertical: 12,
+    borderRadius: 15,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  detailTexte: {
+    fontSize: 18,
+    color: '#000',
+    fontWeight: 'bold'
+  }
 });

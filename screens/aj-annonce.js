@@ -3,9 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView,
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
+import { Picker } from '@react-native-picker/picker';
 
 export default function AjoutAnnonce() {
-  // États
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
@@ -13,8 +13,8 @@ export default function AjoutAnnonce() {
   const [prix_promo, setPrix_Promo] = useState('');
   const [prix_normal, setPrix_Normal] = useState('');
   const [user, setUser] = useContext(GlobalContext);
-  const[audience, setAudience] = useState();
-  const[prix_annonce, setPrix_Annonce] = useState();
+  const [audience, setAudience] = useState('10');
+  const [prix_annonce, setPrix_Annonce] = useState('');
 
   useEffect(() => {
     Id_Annonce(generateId());
@@ -34,7 +34,6 @@ export default function AjoutAnnonce() {
     return parseInt(price).toLocaleString('fr-FR');
   };
 
-  // Prendre une photo
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -50,10 +49,9 @@ export default function AjoutAnnonce() {
 
     if (!result.canceled) {
       setImages([result.assets[0].uri]);
-    }
+    } 
   };
 
-  // Choisir une image
   const choisirImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -62,7 +60,7 @@ export default function AjoutAnnonce() {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -153,39 +151,37 @@ export default function AjoutAnnonce() {
       </View>
 
       <View style={styles.row}>
-      <View style={styles.section}>
-        <Text style={styles.label}>Prix Normal</Text>
-        <TextInput
-          style={styles.input}
-          value={prix_normal}
-          onChangeText={(text) => handlePriceChange(text, setPrix_Normal)}
-          placeholder="Entrez le prix normal"
-          keyboardType="numeric"
-        />
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Prix Normal</Text>
+          <TextInput
+            style={styles.input}
+            value={prix_normal}
+            onChangeText={(text) => handlePriceChange(text, setPrix_Normal)}
+            placeholder="Entrez le prix normal"
+            keyboardType="numeric"
+          />
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Prix Promotionnel</Text>
-        <TextInput
-          style={styles.input}
-          value={prix_promo}
-          onChangeText={(text) => handlePriceChange(text, setPrix_Promo)}
-          placeholder="Entrez le prix promo"
-          keyboardType="numeric"
-        />
- 
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Prix Promotionnel</Text>
+          <TextInput
+            style={styles.input}
+            value={prix_promo}
+            onChangeText={(text) => handlePriceChange(text, setPrix_Promo)}
+            placeholder="Entrez le prix promo"
+            keyboardType="numeric"
+          />
+        </View>
       </View>
 
       {prix_normal && prix_promo && (
         <View style={styles.section}>
           <Text style={styles.discountText}>
-            Réduction: {Math.round(( (prix_normal-prix_promo)/prix_normal) * 100)}%
+            Réduction: {Math.round(((prix_normal - prix_promo) / prix_normal) * 100)}%
           </Text>
         </View>
       )}
 
-      {/* Sélection d'Images */}
       <View style={styles.section}>
         <Text style={styles.label}>Photo</Text>
         <View style={styles.imagesContainer}>
@@ -215,22 +211,27 @@ export default function AjoutAnnonce() {
         </View>
       </View>
 
-          <View style={styles.section}>
+      <View style={styles.section}>
         <Text style={styles.label}>Audience*</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Titre de l'annonce"
-          value={audience}
-          onChangeText={setAudience}
-          keyboardType='numeric'
-        />
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={audience}
+            onValueChange={(itemValue) => setAudience(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="1 à 2 personnes" value="2" />
+            <Picker.Item label="1 à 10 personnes" value="10" />
+            <Picker.Item label="1 à 50 personnes" value="50" />
+            <Picker.Item label="1 à 100 personnes" value="100" />
+          </Picker>
+        </View>
       </View>
 
-        <View style={styles.section}>
+      <View style={styles.section}>
         <Text style={styles.label}>Prix*</Text>
         <TextInput
           style={styles.input}
-          placeholder="Titre de l'annonce"
+          placeholder="Prix à payer pour publier"
           value={prix_annonce}
           onChangeText={setPrix_Annonce}
           keyboardType='numeric'
@@ -277,11 +278,6 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  formattedPrice: {
-    fontSize: 16,
-    color: '#333',
-    marginTop: 5,
   },
   discountText: {
     fontSize: 16,
@@ -348,10 +344,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-
-    row: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // espace entre les deux
-     marginHorizontal: 5,
-  }
+    justifyContent: 'space-between',
+    marginHorizontal: 5,
+  },
+  pickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 60,
+    width: '100%',
+  },
 });
