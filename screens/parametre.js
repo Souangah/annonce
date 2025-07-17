@@ -1,65 +1,65 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons, FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 
 export default function Parametre({ navigation }) {
-    const[user, setUser]=useContext(GlobalContext);
+  const [user] = useContext(GlobalContext);
+
   return (
-    <ScrollView style={styles.container}> 
-      <View style={styles.section}>
-        <Text style={styles.subtitle}>Bienvenue</Text>
-         <Text style={styles.phone}>{user?.nom_prenom || 'aucun'}</Text>
-        <Text style={styles.phone}>{user?.telephone || 'aucun'}</Text>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.header}>
+        <Text style={styles.welcome}>Bienvenue</Text>
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{user?.nom_prenom || 'Invité'}</Text>
+        </View>
       </View>
 
       <View style={styles.menu}>
+        <MenuItem
+          icon={<Ionicons name="person-outline" size={20} color="#5E72E4" />}
+          label="Information de compte"
+          onPress={() => navigation.navigate('ProfilUtilisateur')}
+        />
 
-        <View style={styles.card}>
-          <MenuItem
-            icon={<Ionicons name="person-outline" size={18} color="#333" />}
-            label="Information de compte"
-            onPress={() => navigation.navigate('ProfilUtilisateur')}
-          />
-        </View>
+        <MenuItem
+          icon={<Feather name="key" size={20} color="#5E72E4" />}
+          label="Créer mon code"
+          onPress={() => navigation.navigate('CreerCode')}
+        />
 
-        <View style={styles.card}>
-          <MenuItem
-            icon={<Feather name="key" size={18} color="#333" />}
-            label="Créer mon code"
-            onPress={() => navigation.navigate('CreerCode')}
-          />
-        </View>
+        <MenuItem
+          icon={<MaterialCommunityIcons name="wallet-outline" size={20} color="#5E72E4" />}
+          label="Plafond du compte"
+          onPress={() => navigation.navigate('Plafond')}
+        />
 
-        <View style={styles.card}>
-          <MenuItem
-            icon={<MaterialCommunityIcons name="wallet-outline" size={18} color="#333" />}
-            label="Plafond du compte"
-            onPress={() => navigation.navigate('Plafond')}
-          />
-        </View>
+        <MenuItem
+          icon={<FontAwesome5 name="headset" size={20} color="#5E72E4" />}
+          label="Service client"
+          onPress={() => navigation.navigate('Service')}
+        />
 
-        <View style={styles.card}>
-          <MenuItem
-            icon={<FontAwesome5 name="headset" size={18} color="#333" />}
-            label="Service client"
-            onPress={() => navigation.navigate('Connexion')}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <MenuItem
-            icon={<Feather name="file-text" size={18} color="#333" />}
-            label="Termes et conditions"
-            onPress={() => navigation.navigate('Termes')}
-          />
-        </View>
-
+        <MenuItem
+          icon={<Feather name="file-text" size={20} color="#5E72E4" />}
+          label="Termes et conditions"
+          onPress={() => navigation.navigate('Termes')}
+        />
       </View>
 
-      <TouchableOpacity style={styles.logout} onPress={() => navigation.navigate('Connexion')}>
-        <Text style={styles.logoutText}>Déconnexion</Text>
-        <Ionicons name="log-out-outline" size={20} color="#fbf8f8ff" />
+      <TouchableOpacity 
+        style={styles.logoutButton} 
+        onPress={() => navigation.navigate('Connexion')}
+        activeOpacity={0.9}
+      >
+        <View style={styles.logoutContent}>
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={styles.logoutText}>Déconnexion</Text>
+        </View>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -67,12 +67,16 @@ export default function Parametre({ navigation }) {
 
 function MenuItem({ icon, label, onPress }) {
   return (
-    <TouchableOpacity style={styles.item} onPress={onPress}>
-      <View style={styles.itemLeft}>
+    <TouchableOpacity 
+      style={styles.menuItem} 
+      onPress={onPress} 
+      activeOpacity={0.9}
+    >
+      <View style={styles.menuIcon}>
         {icon}
-        <Text style={styles.itemText}>{label}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#999"/>
+      <Text style={styles.menuLabel}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
     </TouchableOpacity>
   );
 }
@@ -80,69 +84,93 @@ function MenuItem({ icon, label, onPress }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
-    padding: 20,
+    backgroundColor: '#F8FAFC',
   },
-  section: {
-    marginBottom: 25,
-    
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 40,
   },
-  subtitle: {
-    fontSize: 45,
-    color: '#222',
-    marginBottom: 4
+  header: {
+    marginBottom: 24,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  welcome: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 6,
+  },
+  userInfo: {
+    marginTop: 10,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#334155',
   },
   phone: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#333'
-  },
-
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 18
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
-  },
-  itemLeft: {
-    flexDirection: 'row',
-   
-  },
-  itemText: {
     fontSize: 15,
-    color: '#333',
-    marginLeft: 12
+    color: '#64748B',
+    marginTop: 4,
   },
-  logout: {
+  menu: {
+    marginBottom: 20,
+  },
+  menuItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#0d0d0dff',
-    paddingVertical: 16,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 1.5,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#E0E7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1E293B',
+    fontWeight: '500',
+  },
+  logoutButton: {
+    backgroundColor: '#1E293B',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginTop: 10,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 3 },
     shadowRadius: 8,
-    elevation: 2
+    elevation: 3,
+  },
+  logoutContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fbf8f8ff'
+    color: '#FFFFFF',
+    marginLeft: 10,
   },
 });

@@ -43,7 +43,7 @@ export default function ListeAnnonce({ navigation }) {
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>{item.titre}</Text>
 
-        <View style={styles.priceContainer}>
+            <View style={styles.priceContainer}>
           {item.prix_promo ? (
             <>
               <Text style={styles.prixOriginal}>{item.prix_normal} FCFA</Text>
@@ -54,10 +54,15 @@ export default function ListeAnnonce({ navigation }) {
           )}
         </View>
 
+         <Text style={styles.title} numberOfLines={1}>{item.description}</Text>
         <View style={styles.footer}>
           <Text style={styles.date}>
             {item.date_annonce || item.date} à {item.heure || item.heure}   durée : {item.duree} days
           </Text>
+              <View style={styles.durationBadge}>
+              <Ionicons name="time-outline" size={14} color="#8A65D9" />
+              <Text style={styles.durationText}>{item.duree} jours</Text>
+            </View>
         </View>
 
         <View style={styles.actions}>
@@ -206,5 +211,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#999',
     fontSize: 16,
+  },
+
+    durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'rigth',
+    backgroundColor: 'rgba(138, 101, 217, 0.1)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    marginLeft: 10,
+  },
+  durationText: {
+    fontSize: 12,
+    color: '#8A65D9',
+    fontWeight: '600',
+    marginLeft: 5,
   },
 });

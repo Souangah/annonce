@@ -15,7 +15,8 @@ import AnnonceUtilisateur from '../screens/annonce-utilisateur';
 import Rechargement from '../screens/rechargement';
 import Retrait from '../screens/retrait';
 import Parametre from '../screens/parametre';
-import AutreParametre from '../screens/autre-parametre';
+import Plus from '../screens/autre-parametre';
+import Service from '../screens/service';
 
 
 
@@ -38,7 +39,8 @@ export default function Router() {
          <Stack.Screen name="Rechargement" component={Rechargement} />
          <Stack.Screen name="Retrait" component={Retrait} />
           <Stack.Screen name="Parametre" component={Parametre} />
-          <Stack.Screen name="plus" component={AutreParametre} />
+          <Stack.Screen name="Plus" component={Plus} />
+           <Stack.Screen name="Service" component={Service} />
       </Stack.Navigator>
     </NavigationContainer>
   );

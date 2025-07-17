@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  ScrollView
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function NouveauUtilisateur({ navigation, route }) {
