@@ -75,8 +75,9 @@ export default function DetailsAnnonce({ route, navigation }) {
           'Content-Type': "application/json"
         },
         body: JSON.stringify({
-          nom_prenom: user.nom_prenom,
-          id_annonce: id_annonce, 
+          user_id: user.user_id,
+          id_annonce: id_annonce,
+          nom_prenom: user.nom_prenom, 
         
         })
       });
@@ -273,7 +274,7 @@ export default function DetailsAnnonce({ route, navigation }) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.buttonText}>Valider cette offre</Text>
+            <Text style={styles.buttonText}>ok</Text>
             <MaterialIcons name="flash-on" size={24} color="#FFF" style={styles.buttonIcon} />
           </LinearGradient>
         </TouchableOpacity>

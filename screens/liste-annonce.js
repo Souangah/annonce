@@ -1,24 +1,50 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  Image, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  Linking, 
+  TextInput 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 
 export default function ListeAnnonce({ navigation }) {
   const [liste, setListe] = useState([]);
+  const [filteredListe, setFilteredListe] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const[user, setUser] = useContext(GlobalContext);
+  const [rechercher, setRechercher] = useState('');
+  const [user] = useContext(GlobalContext);
 
   useEffect(() => {
     getAnnonce();
   }, []);
 
+  useEffect(() => {
+    // Filtrer les annonces quand la recherche change
+    if (rechercher) {
+      const filtered = liste.filter(item => 
+        item.titre.toLowerCase().includes(rechercher.toLowerCase()) ||
+        item.description.toLowerCase().includes(rechercher.toLowerCase())
+      );
+      setFilteredListe(filtered);
+    } else {
+      setFilteredListe(liste);
+    }
+  }, [rechercher, liste]);
+
   const getAnnonce = async () => {
     try {
+      setRefreshing(true);
       const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
       const result = await response.json();
       setListe(result);
+      setFilteredListe(result);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -28,12 +54,47 @@ export default function ListeAnnonce({ navigation }) {
   };
 
   const handleRefresh = () => {
-    setRefreshing(true);
     getAnnonce();
+  };
+
+  const handleIconPress = (item) => {
+    navigation.navigate('DetailsAnnonce', { annonceId: item.id_annonce });
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
+      {/* En-tête de la carte */}
+      <View style={styles.header}>
+        <Image
+          source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+          style={styles.avatar}
+        />
+        <View style={styles.headerText}>
+          <Text style={styles.name}>{user?.nom_prenom || "Utilisateur"}</Text>
+          <Text style={styles.sponsored}>Sponsorisé</Text>
+        </View>
+      </View>
+
+      {/* Ligne de séparation */}
+      <View style={styles.separator} />
+
+      {/* Message de promotion */}
+      <View style={styles.promotionContainer}>
+        <View style={styles.headerRight}>
+          <Text style={styles.date}>{item.date} à {item.heure}</Text>
+          <TouchableOpacity onPress={() => handleIconPress(item)}>
+            <Ionicons name="eye" size={20} color="#ff4757" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.promotionText}>
+          {item.titre}
+        </Text>
+      </View>
+
+      {/* Ligne de séparation */}
+      <View style={styles.separator} />
+
+      {/* Image principale */}
       <Image 
         source={{ uri: `data:${item.type};base64,${item.photo64}` }}
         style={styles.image}
@@ -41,33 +102,32 @@ export default function ListeAnnonce({ navigation }) {
       />
 
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={1}>{item.titre}</Text>
-
-            <View style={styles.priceContainer}>
-          {item.prix_promo ? (
-            <>
-              <Text style={styles.prixOriginal}>{item.prix_normal} FCFA</Text>
-              <Text style={styles.prixPromo}>{item.prix_promo} FCFA</Text>
-            </>
-          ) : (
-            <Text style={styles.prixNormal}>{item.prix_normal} FCFA</Text>
-          )}
+        {/* Prix */}
+        <View style={styles.priceContainer}>
+          <Text style={styles.prixNormal}>{item.prix_normal} FCFA</Text>
+          <Text style={styles.prixPromo}>{item.prix_promo} FCFA</Text>
         </View>
 
-         <Text style={styles.title} numberOfLines={1}>{item.description}</Text>
-        <View style={styles.footer}>
-          <Text style={styles.date}>
-            {item.date_annonce || item.date} à {item.heure || item.heure}   durée : {item.duree} days
-          </Text>
-              <View style={styles.durationBadge}>
-              <Ionicons name="time-outline" size={14} color="#8A65D9" />
-              <Text style={styles.durationText}>{item.duree} jours</Text>
-            </View>
+        {/* description */}
+        <Text style={styles.description}>{item.description}</Text>
+
+        {/* Informations de vue et audience */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statsItem}>
+            <Ionicons name="eye" size={16} color="#666" />
+            <Text style={styles.statsText}>{item.vue} vues</Text>
+          </View>
+          
+          <View style={styles.statsItem}>
+            <Ionicons name="people-outline" size={16} color="#666" />
+            <Text style={styles.statsText}>Audience: {item.audience}</Text>
+          </View>
         </View>
 
+        {/* Boutons d'action */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={[styles.actionButton,  { backgroundColor: '#3378dfff' }]}
+            style={[styles.actionButton, { backgroundColor: '#3378dfff' }]}
             onPress={() => Linking.openURL(`tel:${item.telephone}`)}
           >
             <Ionicons name="call-outline" size={20} color="white" />
@@ -95,46 +155,155 @@ export default function ListeAnnonce({ navigation }) {
   }
 
   return (
-    <FlatList
-      data={liste}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id_annonce}
-      contentContainerStyle={styles.container}
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
-      ListEmptyComponent={
-        <View style={styles.empty}>
-          <Ionicons name="alert-circle-outline" size={50} color="#ccc" />
-          <Text style={styles.emptyText}>Aucune annonce disponible</Text>
-        </View>
-      }
-    />
+    <View style={styles.container}>
+      {/* Champ de recherche */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Rechercher des annonces..."
+          placeholderTextColor="#888"
+          value={rechercher}
+          onChangeText={setRechercher}
+        />
+        {rechercher ? (
+          <TouchableOpacity onPress={() => setRechercher('')} style={styles.clearButton}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      <FlatList
+        data={filteredListe}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id_annonce.toString()}
+        contentContainerStyle={styles.listContainer}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="alert-circle-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>
+              {rechercher ? 
+                "Aucune annonce trouvée pour votre recherche" : 
+                "Aucune annonce disponible"
+              }
+            </Text>
+          </View>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    margin: 15,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    height: 50,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 5,
+  },
+  listContainer: {
+    paddingBottom: 20,
+    paddingHorizontal: 10,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 18,
+    marginBottom: 20,
     overflow: 'hidden',
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#eaeaea',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    paddingBottom: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  headerText: {
+    flex: 1,
+  },
+  name: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+  },
+  sponsored: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  date: {
+    fontSize: 12,
+    color: '#666',
+    marginRight: 10,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#eaeaea',
+  },
+  promotionContainer: {
+    padding: 5,
+    backgroundColor: '#f8f9fa',
+  },
+  promotionText: {
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
   },
   image: {
     width: '100%',
-    height: 200,
+    height: 300,
+    backgroundColor: '#f0f0f0',
   },
   content: {
     padding: 15,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 4,
+  description: {
+    fontSize: 14,
+    color: '#444',
+    marginVertical: 10,
+    lineHeight: 20,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -142,7 +311,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
-  prixOriginal: {
+  prixNormal: {
     fontSize: 14,
     color: '#999',
     textDecorationLine: 'line-through',
@@ -152,30 +321,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ff4757',
   },
-  prixNormal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  footer: {
+  statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 15,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  statsItem: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  date: {
+  statsText: {
     fontSize: 12,
     color: '#666',
-  },
-  detailButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  detailText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 10,
+    marginLeft: 5,
   },
   actions: {
     flexDirection: 'row',
@@ -185,47 +346,35 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 120,
+    justifyContent: 'center',
   },
   actionText: {
     color: 'white',
     fontWeight: 'bold',
-    marginLeft: 5,
-    fontSize: 12,
+    marginLeft: 8,
+    fontSize: 14,
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 50,
+    backgroundColor: '#f8f9fa',
   },
   emptyText: {
-    marginTop: 10,
+    marginTop: 15,
     color: '#999',
     fontSize: 16,
-  },
-
-    durationBadge: {
-    flexDirection: 'row',
-    alignItems: 'rigth',
-    backgroundColor: 'rgba(138, 101, 217, 0.1)',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 15,
-    marginLeft: 10,
-  },
-  durationText: {
-    fontSize: 12,
-    color: '#8A65D9',
-    fontWeight: '600',
-    marginLeft: 5,
+    textAlign: 'center',
   },
 });

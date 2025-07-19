@@ -91,7 +91,7 @@ export default function Menu({ navigation }) {
       {/* Menu bas */}
       <View style={styles.bottomMenu}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Plus')} >
-          <Ionicons name="person-outline" size={24} color="#000000" />
+          <Ionicons name="ellipsis-vertical" size={24} color="#000000" />
           <Text style={styles.menuLabel}>Plus</Text>
         </TouchableOpacity>
 
