@@ -1,12 +1,13 @@
 import React, { useLayoutEffect, useContext, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
+import NotificationBadge from './notification-non-lu';
 
 const { width } = Dimensions.get('window');
 
 export default function Menu({ navigation }) {
-  const [user, setUser] = useContext(GlobalContext);
+  const [user] = useContext(GlobalContext);
   const [showSolde, setShowSolde] = useState(true);
 
   useLayoutEffect(() => {
@@ -19,37 +20,32 @@ export default function Menu({ navigation }) {
       },
       headerTintColor: '#000000',
       headerRight: () => (
-        <View style={{ flexDirection: 'row', marginRight: 15 }}>
-          <TouchableOpacity
-            onPress={() => Alert.alert('Notifications', 'Aucune notification')}
-            style={styles.notificationBadge}
-          >
-            <Ionicons name="notifications-outline" size={22} color="#000000" style={{ marginRight: 20 }} />
-            <View style={styles.badge} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Connexion')}>
+        <View style={{ flexDirection: 'row', marginRight: 15, alignItems: 'center' }}>
+          <NotificationBadge
+            userId={user?.code_utilisateur}
+            onPress={() => navigation.navigate('Notification')}
+          />
+          <TouchableOpacity onPress={() => navigation.navigate('Connexion')} style={{ marginLeft: 15 }}>
             <Ionicons name="log-out-outline" size={22} color="#000000" />
           </TouchableOpacity>
         </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, user]);
 
   return (
     <View style={styles.container}>
-      {/* Carte solde */}
       <TouchableOpacity onPress={() => setShowSolde(!showSolde)} activeOpacity={0.8}>
         <View style={styles.soldeCard}>
           <View style={styles.cardHeaderOnly}>
             <Text style={styles.cardLabel}>Mon solde</Text>
             <Text style={styles.cardSolde}>
-              {showSolde ? `${user?.solde ?? 0} FCFA` : '●●●●●●'}
+              {showSolde ? `${user?.solde || 0} FCFA` : '*********'}
             </Text>
           </View>
         </View>
       </TouchableOpacity>
 
-      {/* Boutons actions */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={[styles.button, styles.retrait]} onPress={() => navigation.navigate('Retrait')}>
           <Ionicons name="cash-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
@@ -62,7 +58,6 @@ export default function Menu({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Transactions */}
       <View style={styles.transactionContainer}>
         <Text style={styles.transactionTitle}>Dernières transactions</Text>
         {[
@@ -88,29 +83,28 @@ export default function Menu({ navigation }) {
         ))}
       </View>
 
-      {/* Menu bas */}
       <View style={styles.bottomMenu}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Plus')} >
-          <Ionicons name="ellipsis-vertical" size={24} color="#000000" />
-          <Text style={styles.menuLabel}>Plus</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Plus')}>
+          <Ionicons name="home" size={20} color="#000000" />
+          <Text style={styles.menuLabel}>Accueil</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ListeAnnonces')}>
-          <Ionicons name="briefcase-outline" size={22} color="#000" />
+          <Ionicons name="briefcase-outline" size={20} color="#000" />
           <Text style={styles.menuLabel}>les Annonces</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.mainActionButton} onPress={() => navigation.navigate('AjouterAnnonce', { user })}>
-          <Ionicons name="add" size={30} color="#fff" />
+          <Ionicons name="add" size={35} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AnnonceUtilisateur')}>
-          <Ionicons name="briefcase-outline" size={22} color="#000" />
+          <Ionicons name="briefcase-outline" size={20} color="#000" />
           <Text style={styles.menuLabel}>Mes Annonces</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Parametre')}>
-          <Ionicons name="settings-outline" size={22} color="#000000" />
+          <Ionicons name="settings-outline" size={20} color="#000000" />
           <Text style={styles.menuLabel}>Paramètre</Text>
         </TouchableOpacity>
       </View>
@@ -198,7 +192,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   menuLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#000',
     marginTop: 6,
     fontWeight: '500',
@@ -216,15 +210,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     marginTop: -25,
-  },
-  notificationBadge: { position: 'relative' },
-  badge: {
-    position: 'absolute',
-    right: 15,
-    top: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FF5722',
   },
 });

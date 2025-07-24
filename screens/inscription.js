@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-export default function NouveauUtilisateur({ navigation, route }) {
-  const item = route.params?.item || {};
-  const [id, setId] = useState(item.id || '');
-  const [nom_prenom, setNomPrenom] = useState(item.nom_prenom || '');
-  const [telephone, setTelephone] = useState(item.telephone || '');
-  const [mdp, setMdp] = useState(item.mdp || '');
+export default function NouveauUtilisateur({ navigation}) {
+ 
+  const [nom_prenom, setNomPrenom] = useState();
+  const [telephone, setTelephone] = useState();
+  const [mdp, setMdp] = useState();
   const [showPassword, setShowPassword] = useState(false);
 
   const handlePhoneChange = (text) => {
@@ -18,7 +17,7 @@ export default function NouveauUtilisateur({ navigation, route }) {
   };
 
   const ValiderUtilisateur = async () => {
-    if (!id || !nom_prenom || !telephone || !mdp) {
+    if ( !nom_prenom || !telephone || !mdp) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
       return;
     }
@@ -34,32 +33,35 @@ export default function NouveauUtilisateur({ navigation, route }) {
     }
 
     try {
-      const response = await fetch("https://epencia.net/app/diako/api/ajouter_utilisateur.php", {
+      const response = await fetch("https://epencia.net/app/souangah/annonce/inscription.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          id: id,
           nom_prenom: nom_prenom,
           telephone: telephone,
           mdp: mdp
         })
       });
 
-      const result = await response.json();
+      const result = await response.text();
       console.log(result);
 
-      if (result.message === "Succès") {
-        Alert.alert("Succès", "Utilisateur enregistré avec succès.");
-        setId('');
+     if (result === 'success') {
+  Alert.alert("Succès", result, [
+    { text: "OK", onPress: () => navigation.navigate('Connexion') }
+  ]);
         setNomPrenom('');
         setTelephone('');
         setMdp('');
-        navigation.navigate('Connexion');
-      } else {
-        Alert.alert("Erreur", result.message || "Une erreur est survenue.");
-      }
+
+} else {
+  Alert.alert("Erreur ", result);
+}
+
+
+       
 
     } catch (error) {
       Alert.alert("Erreur", "Échec lors de l'envoi des données.");
@@ -71,17 +73,6 @@ export default function NouveauUtilisateur({ navigation, route }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Créer votre compte</Text>
       <Text style={styles.subtitle}>Remplissez les informations</Text>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.inputLabel}>Matricule</Text>
-        <TextInput
-          style={styles.input}
-          value={id}
-          onChangeText={setId}
-          placeholder="Ex: USER001"
-          placeholderTextColor="#A1A1AA"
-        />
-      </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Nom & Prénom</Text>
@@ -116,7 +107,7 @@ export default function NouveauUtilisateur({ navigation, route }) {
             value={mdp}
             onChangeText={setMdp}
             placeholder="••••"
-            placeholderTextColor="#A1A1AA"
+           
             secureTextEntry={!showPassword}
             maxLength={4}
             keyboardType="number-pad"

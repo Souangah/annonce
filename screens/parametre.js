@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons, FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5, Feather, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 
 export default function Parametre({ navigation }) {
@@ -16,6 +16,7 @@ export default function Parametre({ navigation }) {
         <Text style={styles.welcome}>Bienvenue</Text>
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{user?.nom_prenom || 'Invité'}</Text>
+          <Text style={styles.userName}>{user?.telephone || 'Invité'}</Text>
         </View>
       </View>
 
@@ -26,17 +27,35 @@ export default function Parametre({ navigation }) {
           onPress={() => navigation.navigate('ProfilUtilisateur')}
         />
 
-        <MenuItem
-          icon={<Feather name="key" size={20} color="#5E72E4" />}
-          label="Créer mon code"
-          onPress={() => navigation.navigate('CreerCode')}
+           <MenuItem
+            icon={<Ionicons name="add-circle-outline" size={20} color="#5E72E4" />}
+            label="Publier une annonce"
+            onPress={() => navigation.navigate('AjouterAnnonce')}
+            />
+
+            <MenuItem
+            icon={<MaterialCommunityIcons name="credit-card-plus-outline" size={20} color="#5E72E4" />}
+            label="Rechargement"
+            onPress={() => navigation.navigate('Rechargement')}
+            />
+
+         <MenuItem
+          icon={<FontAwesome name="money" size={18} color="#5E72E4" />}
+          label="Retrait"
+          onPress={() => navigation.navigate('Retrait')}
         />
 
         <MenuItem
-          icon={<MaterialCommunityIcons name="wallet-outline" size={20} color="#5E72E4" />}
-          label="Plafond du compte"
-          onPress={() => navigation.navigate('Plafond')}
+          icon={<Ionicons name="earth-outline" size={20} color="#5E72E4" />}
+          label="Toutes les annonces"
+          onPress={() => navigation.navigate('ListeAnnonces')}
         />
+
+        <MenuItem
+           icon={<MaterialCommunityIcons name="format-list-bulleted" size={20} color="#5E72E4" />}
+           label="Mes annonces"
+           onPress={() => navigation.navigate('AnnonceUtilisateur')}
+         />
 
         <MenuItem
           icon={<FontAwesome5 name="headset" size={20} color="#5E72E4" />}
@@ -92,8 +111,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    marginBottom: 24,
-    paddingBottom: 18,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
@@ -124,9 +143,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginBottom: 5,
     shadowColor: '#0F172A',
     shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 2 },
@@ -136,8 +155,8 @@ const styles = StyleSheet.create({
     borderColor: '#F1F5F9',
   },
   menuIcon: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 10,
     backgroundColor: '#E0E7FF',
     justifyContent: 'center',
@@ -146,7 +165,7 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: '#1E293B',
     fontWeight: '500',
   },

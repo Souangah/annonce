@@ -13,15 +13,23 @@ export default function AjoutAnnonce() {
   const [prix_promo, setPrix_Promo] = useState('');
   const [prix_normal, setPrix_Normal] = useState('');
   const [user, setUser] = useContext(GlobalContext);
-  const [audience, setAudience] = useState('10');
+  const [audience, setAudience] = useState('');
   const [prix_annonce, setPrix_Annonce] = useState('');
 
   useEffect(() => {
     Id_Annonce(generateId());
+    // Initialise prix_annonce au départ selon audience par défaut
+    calculerPrixDepuisAudience(audience);
   }, []);
 
   const generateId = () => {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  };
+
+  // Nouvelle fonction : calcule le prix automatiquement
+  const calculerPrixDepuisAudience = (val) => {
+    const prix = parseInt(val) * 25;
+    setPrix_Annonce(prix.toString());
   };
 
   const handlePriceChange = (text, setPrice) => {
@@ -34,6 +42,7 @@ export default function AjoutAnnonce() {
     return parseInt(price).toLocaleString('fr-FR');
   };
 
+  // activer l'appareil photo
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -52,6 +61,7 @@ export default function AjoutAnnonce() {
     } 
   };
 
+  // choisir une image dans la galerie
   const choisirImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -60,7 +70,7 @@ export default function AjoutAnnonce() {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -76,7 +86,7 @@ export default function AjoutAnnonce() {
   };
 
   const validerAnnonce = async () => {
-    if (!titre || !description) {
+    if (!titre || !description || !prix_normal || !prix_promo || images.length === 0) {
       Alert.alert('Champs manquants', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -110,7 +120,7 @@ export default function AjoutAnnonce() {
       });
 
       const result = await response.text();
-      Alert.alert("Réponse du serveur", result);
+      Alert.alert("Message", result);
       console.log(result);
 
       setTitre('');
@@ -119,6 +129,8 @@ export default function AjoutAnnonce() {
       setPrix_Promo('');
       setImages([]);
       Id_Annonce(generateId());
+      setAudience('');
+      calculerPrixDepuisAudience();
     } catch (error) {
       Alert.alert('Erreur', error.toString());
     }
@@ -126,7 +138,7 @@ export default function AjoutAnnonce() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.titre}>Publier une annonce</Text>
+      <Text style={styles.titre}>Creer une annonce</Text>
 
       <View style={styles.section}>
         <Text style={styles.label}>Titre*</Text>
@@ -216,10 +228,13 @@ export default function AjoutAnnonce() {
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={audience}
-            onValueChange={(itemValue) => setAudience(itemValue)}
+            onValueChange={(itemValue) => {
+              setAudience(itemValue);
+              calculerPrixDepuisAudience(itemValue);
+            }}
             style={styles.picker}
           >
-            <Picker.Item label="1 à 2 personnes" value="2" />
+            <Picker.Item label="1 à 2 personnes" value="1" />
             <Picker.Item label="1 à 10 personnes" value="10" />
             <Picker.Item label="1 à 50 personnes" value="50" />
             <Picker.Item label="1 à 100 personnes" value="100" />
@@ -233,7 +248,7 @@ export default function AjoutAnnonce() {
           style={styles.input}
           placeholder="Prix à payer pour publier"
           value={prix_annonce}
-          onChangeText={setPrix_Annonce}
+          editable={false} // désactivé car prix calculé automatiquement
           keyboardType='numeric'
         />
       </View>
@@ -332,7 +347,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   validerButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#000000ff',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',

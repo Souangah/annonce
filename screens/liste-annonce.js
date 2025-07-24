@@ -1,15 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Linking, 
-  TextInput 
-} from 'react-native';
+import {View,Text, FlatList,Image,StyleSheet,TouchableOpacity,ActivityIndicator,Linking,TextInput} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 
@@ -30,7 +20,7 @@ export default function ListeAnnonce({ navigation }) {
     if (rechercher) {
       const filtered = liste.filter(item => 
         item.titre.toLowerCase().includes(rechercher.toLowerCase()) ||
-        item.description.toLowerCase().includes(rechercher.toLowerCase())
+        item.description.toLowerCase().includes(rechercher.toLowerCase()) 
       );
       setFilteredListe(filtered);
     } else {
@@ -57,9 +47,7 @@ export default function ListeAnnonce({ navigation }) {
     getAnnonce();
   };
 
-  const handleIconPress = (item) => {
-    navigation.navigate('DetailsAnnonce', { annonceId: item.id_annonce });
-  };
+
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
@@ -82,7 +70,7 @@ export default function ListeAnnonce({ navigation }) {
       <View style={styles.promotionContainer}>
         <View style={styles.headerRight}>
           <Text style={styles.date}>{item.date} à {item.heure}</Text>
-          <TouchableOpacity onPress={() => handleIconPress(item)}>
+          <TouchableOpacity onPress={() => navigation.navigate("Details d'annonce", { annonceId: item.id_annonce })}>
             <Ionicons name="eye" size={20} color="#ff4757" />
           </TouchableOpacity>
         </View>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "annonce",
+    "name": "Yebema",
     "slug": "annonce",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,6 +24,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+       "googleServicesFile": "./google-services.json",
       "package": "com.souangah.annonce",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
@@ -42,6 +43,11 @@
         "projectId": "be33dc1c-0c26-432b-a129-36156debf70a"
       }
     },
-    "owner": "souangah"
+    "owner": "souangah",
+     "notification": {
+      "icon": "./assets/favicon.png",
+      "color": "#ffffff"
+    }
+
   }
 }

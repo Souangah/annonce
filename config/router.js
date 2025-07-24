@@ -17,6 +17,8 @@ import Retrait from '../screens/retrait';
 import Parametre from '../screens/parametre';
 import Plus from '../screens/autre-parametre';
 import Service from '../screens/service';
+import Notification from '../screens/notification-non-lu';
+
 
 
 
@@ -41,6 +43,7 @@ export default function Router() {
           <Stack.Screen name="Parametre" component={Parametre} />
           <Stack.Screen name="Plus" component={Plus} />
            <Stack.Screen name="Service" component={Service} />
+           <Stack.Screen name="Notification" component={Notification} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,18 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
-  ScrollView, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  Dimensions,
-  Animated,
-  Easing,
-  Platform,
-  Share
-} from 'react-native';
+import {View,Text,Image,StyleSheet,ScrollView,ActivityIndicator,TouchableOpacity,Dimensions,Animated,Easing,Platform,Share} from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
 import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +10,9 @@ import 'moment/locale/fr';
 const { width, height } = Dimensions.get('window');
 
 export default function DetailsAnnonce({ route, navigation }) {
+
+  const item = route.params?.item || {};
+  
   const { id_annonce } = route.params;
   const [annonce, setAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
