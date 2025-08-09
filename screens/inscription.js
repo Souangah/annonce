@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView} from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, Image} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 export default function NouveauUtilisateur({ navigation}) {
@@ -61,8 +61,6 @@ export default function NouveauUtilisateur({ navigation}) {
 }
 
 
-       
-
     } catch (error) {
       Alert.alert("Erreur", "Échec lors de l'envoi des données.");
       console.log("Erreur réseau :", error);
@@ -71,8 +69,12 @@ export default function NouveauUtilisateur({ navigation}) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Créer votre compte</Text>
-      <Text style={styles.subtitle}>Remplissez les informations</Text>
+     <Image
+     source={require('../assets/images/logo.png')}
+     style={styles.logo}
+     
+     />
+      <Text style={styles.title}>Espace inscription</Text>
 
       <View style={styles.inputContainer}>
         <Text style={styles.inputLabel}>Nom & Prénom</Text>
@@ -82,7 +84,7 @@ export default function NouveauUtilisateur({ navigation}) {
           onChangeText={setNomPrenom}
           placeholder="Jean Dupont"
           maxLength={30}
-          placeholderTextColor="#A1A1AA"
+          placeholderTextColor="#ccc"
         />
       </View>
 
@@ -93,7 +95,7 @@ export default function NouveauUtilisateur({ navigation}) {
           value={telephone}
           onChangeText={handlePhoneChange}
           placeholder="0700000000"
-          placeholderTextColor="#A1A1AA"
+          placeholderTextColor="#ccc"
           keyboardType="phone-pad"
           maxLength={10}
         />
@@ -113,13 +115,13 @@ export default function NouveauUtilisateur({ navigation}) {
             keyboardType="number-pad"
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? 'eye' : 'eye-off'} size={22} color="#94A3B8" />
+            <Feather name={showPassword ? 'eye' : 'eye-off'} size={22} color="#ccc" />
           </TouchableOpacity>
         </View>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={ValiderUtilisateur}>
-        <Text style={styles.buttonText}>Enregistrer</Text>
+        <Text style={styles.buttonText}>S'inscrire</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -133,16 +135,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 17,
     fontWeight: '700',
     marginBottom: 10,
-    color: '#1E293B',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 24,
+    color: '#000000',
     textAlign: 'center',
   },
   inputContainer: {
@@ -151,46 +147,54 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#475569',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
+  borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 5,
+    marginBottom: 2,
+    backgroundColor: '#fff',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
+    borderRadius: 5,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
-    height: 56,
+    height: 50,
     justifyContent: 'space-between',
   },
   passwordInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1E293B',
+    color: '#000000',
   },
   button: {
     backgroundColor: '#3B82F6',
     borderRadius: 12,
-    height: 56,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 15,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
+
+  logo: {
+    height: 150,
+    width: 150,
+    alignSelf: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 12,
+  }
 });

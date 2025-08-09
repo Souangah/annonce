@@ -22,49 +22,49 @@ export default function Parametre({ navigation }) {
 
       <View style={styles.menu}>
         <MenuItem
-          icon={<Ionicons name="person-outline" size={20} color="#5E72E4" />}
+          icon={<Ionicons name="person-outline" size={28} color="#5E72E4" />}
           label="Information de compte"
           onPress={() => navigation.navigate('ProfilUtilisateur')}
         />
 
            <MenuItem
-            icon={<Ionicons name="add-circle-outline" size={20} color="#5E72E4" />}
+            icon={<Ionicons name="add-circle-outline" size={28} color="#5E72E4" />}
             label="Publier une annonce"
             onPress={() => navigation.navigate('AjouterAnnonce')}
             />
 
             <MenuItem
-            icon={<MaterialCommunityIcons name="credit-card-plus-outline" size={20} color="#5E72E4" />}
+            icon={<MaterialCommunityIcons name="credit-card-plus-outline" size={28} color="#5E72E4" />}
             label="Rechargement"
             onPress={() => navigation.navigate('Rechargement')}
             />
 
          <MenuItem
-          icon={<FontAwesome name="money" size={18} color="#5E72E4" />}
+          icon={<FontAwesome name="money" size={28} color="#5E72E4" />}
           label="Retrait"
           onPress={() => navigation.navigate('Retrait')}
         />
 
         <MenuItem
-          icon={<Ionicons name="earth-outline" size={20} color="#5E72E4" />}
+          icon={<Ionicons name="earth-outline" size={28} color="#5E72E4" />}
           label="Toutes les annonces"
           onPress={() => navigation.navigate('ListeAnnonces')}
         />
 
         <MenuItem
-           icon={<MaterialCommunityIcons name="format-list-bulleted" size={20} color="#5E72E4" />}
+           icon={<MaterialCommunityIcons name="format-list-bulleted" size={28} color="#5E72E4" />}
            label="Mes annonces"
            onPress={() => navigation.navigate('AnnonceUtilisateur')}
          />
 
         <MenuItem
-          icon={<FontAwesome5 name="headset" size={20} color="#5E72E4" />}
+          icon={<FontAwesome5 name="headset" size={28} color="#5E72E4" />}
           label="Service client"
           onPress={() => navigation.navigate('Service')}
         />
 
         <MenuItem
-          icon={<Feather name="file-text" size={20} color="#5E72E4" />}
+          icon={<Feather name="file-text" size={28} color="#5E72E4" />}
           label="Termes et conditions"
           onPress={() => navigation.navigate('Termes')}
         />
@@ -76,7 +76,7 @@ export default function Parametre({ navigation }) {
         activeOpacity={0.9}
       >
         <View style={styles.logoutContent}>
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Ionicons name="log-out-outline" size={28} color="#fff" />
           <Text style={styles.logoutText}>Déconnexion</Text>
         </View>
       </TouchableOpacity>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E2E8F0',
   },
   welcome: {
-    fontSize: 22,
+    fontSize: 30,
     fontWeight: '700',
     color: '#1E293B',
     marginBottom: 6,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   userName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#334155',
   },
@@ -140,12 +140,12 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 15,
     paddingHorizontal: 15,
-    marginBottom: 5,
+    marginBottom: 8,
     shadowColor: '#0F172A',
     shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 2 },
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
     borderColor: '#F1F5F9',
   },
   menuIcon: {
-    width: 30,
-    height: 30,
+    width: 35,
+    height: 35,
     borderRadius: 10,
     backgroundColor: '#E0E7FF',
     justifyContent: 'center',
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#1E293B',
     fontWeight: '500',
   },
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     borderRadius: 14,
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginTop: 10,
     shadowColor: '#0F172A',
     shadowOpacity: 0.05,

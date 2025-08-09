@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlobalContext } from '../config/GlobalUser'; // adapte ce chemin si besoin
 
 const Notification = ({ userId, onPress }) => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
+   const [user] = useContext(GlobalContext);
 
   // Fonction pour récupérer les notifications non lues
   const fetchCount = async () => {
     try {
-      const res = await fetch(`https://enpencia.net/app/souangah/annonce/notification-non-lu.php?user_id=${userId}`);
+      const res = await fetch(`https://enpencia.net/app/souangah/annonce/notification-non-lu.php?user_id=${user?.user_id}`);
       const data = await res.json();
       if (data.status === 'success') {
         setCount(data.total_non_lues);
       }
     } catch (error) {
-      console.error('Erreur de connexion:', error);
+     // console.error('Erreur de connexion:', error);
     } finally {
       setLoading(false);
     }

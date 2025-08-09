@@ -3,12 +3,13 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Alert } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const navigationRef = React.createRef();
 
 export default function NotificationPush() {
   const [user, setUser] = useContext(GlobalContext);
-  const [matricule, setMatricule] = useState(user?.user_id || null);
+  const [matricule, setMatricule] = useState(null);
 
   const registerForPushNotificationsAsync = async () => {
     try {
@@ -35,17 +36,15 @@ export default function NotificationPush() {
     }
   };
 
-  const sendTokenToServer = async (token) => {
+  const sendTokenToServer = async (token, id) => {
     try {
-      if (!token) return;
-
       const response = await fetch('https://epencia.net/app/souangah/annonce/token.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          utilisateur_id: user?.user_id || "0",
+          utilisateur_id: id,
           push_token: token,
         }),
       });
@@ -71,16 +70,24 @@ export default function NotificationPush() {
 
   useEffect(() => {
     const init = async () => {
+      // 🔐 Récupérer le matricule depuis AsyncStorage
+      const storedMatricule = await AsyncStorage.getItem('matricule');
+      setMatricule(storedMatricule);
+
       const token = await registerForPushNotificationsAsync();
-      if (token) {
+      if (token && storedMatricule) {
         console.log("Push token obtenu :", token);
-        await sendTokenToServer(token);
+        await sendTokenToServer(token, storedMatricule);
+      } else if (token && user?.user_id) {
+        await sendTokenToServer(token, user.user_id);
+      } else {
+        console.warn("Matricule introuvable, envoi du token ignoré.");
       }
     };
 
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowBanner: true,
+        shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
       }),
@@ -101,7 +108,7 @@ export default function NotificationPush() {
       notificationListener.remove();
       responseListener.remove();
     };
-  }, [matricule]);
+  }, []);
 
   return null;
 }

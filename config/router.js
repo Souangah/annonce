@@ -31,7 +31,7 @@ export default function Router() {
       <Stack.Navigator initialRouteName="Connexion">
         <Stack.Screen name="Connexion" component={Connexion} />
         <Stack.Screen name="Inscription" component={Inscription} />
-        <Stack.Screen name="Menu" component={Menu} />
+        <Stack.Screen name="Menu" component={Menu} options={{ headerShown: true }}/>
         <Stack.Screen name="AjouterAnnonce" component={AjoutAnnonce} />
         <Stack.Screen name="ListeAnnonces" component={ListeAnnonces} />
          <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
@@ -43,7 +43,7 @@ export default function Router() {
           <Stack.Screen name="Parametre" component={Parametre} />
           <Stack.Screen name="Plus" component={Plus} />
            <Stack.Screen name="Service" component={Service} />
-           <Stack.Screen name="Notification" component={Notification} />
+           <Stack.Screen name="Notification" component={Notification} /> 
       </Stack.Navigator>
     </NavigationContainer>
   );

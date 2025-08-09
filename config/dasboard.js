@@ -1,40 +1,3 @@
-import React, { useLayoutEffect, useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { GlobalContext } from '../config/GlobalUser';
-import NotificationBadge from './notification-non-lu';
-
-const { width } = Dimensions.get('window');
-
-export default function Menu({ navigation }) {
-  const [user] = useContext(GlobalContext);
-  const [showSolde, setShowSolde] = useState(true);
-
-    const [count, setCount] = useState(0);
-
-  
-    // Fonction pour récupérer les notifications non lues
-    const fetchCount = async () => {
-      try {
-        const res = await fetch(`https://epencia.net/app/souangah/annonce/notification-non-lu.php?user_id=${user?.user_id}`);
-        const data = await res.json();
- 
-          setCount(data[0].total);
-          //console.error('ok:', data[0].total);
-       
-      } catch (error) {
-        console.error('Erreur de connexion1:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    useEffect(() => {
-      fetchCount();
-      const interval = setInterval(fetchCount, 10000); // actualise chaque 60 sec
-      return () => clearInterval(interval);
-    }, []);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '',
@@ -50,24 +13,6 @@ export default function Menu({ navigation }) {
             userId={user?.code_utilisateur}
             onPress={() => navigation.navigate('Notification')}
           />
-        {count > 0 && (
-  <View style={{
-    position: 'absolute',
-    top: 0,
-    left: 25,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'red',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }}>
-    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-      {count}
-    </Text>
-  </View>
-)}
-
           <TouchableOpacity onPress={() => navigation.navigate('Connexion')} style={{ marginLeft: 15 }}>
             <Ionicons name="log-out-outline" size={22} color="#000000" />
           </TouchableOpacity>
@@ -76,57 +21,7 @@ export default function Menu({ navigation }) {
     });
   }, [navigation, user]);
 
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => setShowSolde(!showSolde)} activeOpacity={0.8}>
-        <View style={styles.soldeCard}>
-          <View style={styles.cardHeaderOnly}>
-            <Text style={styles.cardLabel}>Mon solde</Text>
-            <Text style={styles.cardSolde}>
-              {showSolde ? `${user?.solde || 0} FCFA` : '*********'}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, styles.retrait]} onPress={() => navigation.navigate('Retrait')}>
-          <Ionicons name="cash-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.buttonText}>Retrait</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.button, styles.recharge]} onPress={() => navigation.navigate('Rechargement')}>
-          <Ionicons name="wallet-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.buttonText}>Recharger</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.transactionContainer}>
-        <Text style={styles.transactionTitle}>Dernières transactions</Text>
-        {[
-          { id: 1, type: 'Recharge', montant: 5000, date: '2025-07-14' },
-          { id: 2, type: 'Retrait', montant: 2000, date: '2025-07-13' },
-          { id: 3, type: 'Recharge', montant: 3000, date: '2025-07-12' },
-        ].map((tx) => (
-          <View key={tx.id} style={styles.transactionItem}>
-            <Ionicons
-              name={tx.type === 'Recharge' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
-              size={20}
-              color={tx.type === 'Recharge' ? '#4CAF50' : '#f44336'}
-              style={{ marginRight: 10 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.txLabel}>{tx.type}</Text>
-              <Text style={styles.txDate}>{tx.date}</Text>
-            </View>
-            <Text style={[styles.txAmount, { color: tx.type === 'Recharge' ? '#4CAF50' : '#f44336' }]}>
-              {tx.type === 'Recharge' ? '+' : '-'} {tx.montant} FCFA
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.bottomMenu}>
+        <View style={styles.bottomMenu}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Accueil')}>
           <Ionicons name="home" size={24} color="#000000" />
           <Text style={styles.menuLabel}>Accueil</Text>
@@ -151,9 +46,7 @@ export default function Menu({ navigation }) {
           <Text style={styles.menuLabel}>Paramètre</Text>
         </TouchableOpacity>
       </View>
-    </View>
-  );
-}
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f0f0' },

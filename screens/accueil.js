@@ -1,76 +1,44 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Animated } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 
 export default function Accueil({ navigation }) {
-  const images = [
-    { id: 1, src: require('../assets/images/im7.jpg') },
-    { id: 2, src: require('../assets/images/im5.jpg') },
-    { id: 3, src: require('../assets/images/im3.jpg') },
-  ];
-
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef(null);
+  const [tableau, setTableau] = useState();
 
   useEffect(() => {
-    let position = 0;
-
-    const animation = Animated.loop(
-      Animated.timing(scrollX, {
-        toValue: (images.length) * (width * 0.8 + 15),
-        duration: images.length * 4000, // + lent
-        useNativeDriver: false,
-      })
-    );
-
-    animation.start();
-
-    const listener = scrollX.addListener(({ value }) => {
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ x: value, animated: false });
-      }
-    });
-
-    return () => {
-      animation.stop();
-      scrollX.removeListener(listener);
-    };
+    Tableau_bord();
   }, []);
+
+  const Tableau_bord = async () => {
+    try {
+      const response = await fetch(""); // ⚠️ Mets ici l’URL de ton API
+      const result = await response.json();
+      setTableau(result);
+    } catch (error) {
+      console.error('Erreur API :', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Animated.ScrollView
-        horizontal
-        ref={scrollViewRef}
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        contentContainerStyle={styles.imageRow}
-      >
-        {images.concat(images).map((item, index) => ( // doublé pour effet boucle
-          <Image
-            key={index}
-            source={item.src}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ))}
-      </Animated.ScrollView>
 
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => navigation.navigate('Connexion')}
-        >
-          <Text style={styles.buttonText}>Se Connecter</Text>
-        </TouchableOpacity>
+      <View style={styles.title}>
+        <Text style={styles.titleText}>Tableau de bord</Text>
+      </View>
 
-        <TouchableOpacity 
-          style={[styles.button, styles.registerButton]}
-          onPress={() => navigation.navigate('Inscription')}
-        >
-          <Text style={styles.buttonText}>S'inscrire</Text>
-        </TouchableOpacity>
+      <View style={styles.menu}>
+      <TouchableOpacity style={styles.boutton1} onPress={() => navigation.navigate('AnnonceUtilisateur')}>
+        <View style={styles.card}>
+          <Text style={styles.cardText1}>2</Text>
+          <Text style={styles.cardText2}>Mes annonces</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.boutton2} onPress={() => navigation.navigate('AnnonceUtilisateur')}>
+        <View style={styles.card}>
+          <Text style={styles.cardText1}>1052</Text>
+          <Text style={styles.cardText2}> Annonces</Text>
+        </View>
+      </TouchableOpacity>
       </View>
     </View>
   );
@@ -79,41 +47,63 @@ export default function Accueil({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
-    justifyContent: 'space-between',
-    paddingVertical: 40,
-  },
-  imageRow: {
-    paddingHorizontal: 10,
-    alignItems: 'center',
-  },
-  image: {
-    width: width * 0.8,
-    height: 200,
-    borderRadius: 12,
-    marginRight: 15,
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
+    padding: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 50,
+    backgroundColor: '#f2f2f2',
   },
-  button: {
-    backgroundColor: '#1e88e5',
-    paddingVertical: 14,
-    paddingHorizontal: 25,
-    borderRadius: 8,
+
+  titleText: {
+    fontSize: 20,
+    marginBottom: 50,
+    marginRight: 200,
+  },
+
+  menu: {
+    flexDirection: 'row',
+    marginBottom: 400,
+  },
+
+boutton1: {
+  backgroundColor: '#007bff',
+  borderRadius: 10,
+  marginBottom: 20,
+  paddingHorizontal: 30,
+  paddingVertical: 10,
+  width: 150,
+  height: 150,
+  marginHorizontal: 5,
+  justifyContent: 'center', 
+  alignItems: 'center',     
+},
+
+boutton2: {
+  backgroundColor: '#0a8e10',
+  borderRadius: 10,
+  marginBottom: 20,
+  paddingHorizontal: 30,
+  paddingVertical: 10,
+  width: 150,
+  height: 150,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+
+  card: {
     alignItems: 'center',
-    marginHorizontal: 8,
   },
-  registerButton: {
-    backgroundColor: '#1e88e5',
+
+  cardText1: {
+    fontSize: 40,
+    marginBottom: 10,
+    color: '#fff', 
+  
   },
-  buttonText: {
+
+  cardText2: {
+    fontSize: 14,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+
   },
 });

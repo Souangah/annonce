@@ -1,7 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser'; // adapte ce chemin si besoin
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function Connexion({ navigation }) {
   const [telephone, setTelephone] = useState('');
@@ -9,25 +11,8 @@ export default function Connexion({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useContext(GlobalContext);
 
-  // Facultatif : charger des valeurs par défaut depuis une API
-  useEffect(() => {
-    const fetchUserDefaults = async () => {
-      try {
-        const response = await fetch('https://epencia.net/app/diako/api/connexion.php'); // adapte l'URL
-        const result = await response.json();
-        if (result && result[0]) {
-          setTelephone(result[0].telephone || '');
-          setMdp(result[0].mdp || '');
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des données par défaut :', error);
-      }
-    };
 
-    fetchUserDefaults();
-  }, []);
-
-  const handleConnexion = async () => {
+  const Valider = async () => {
     if (!telephone.trim() || !mdp.trim()) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
       return;
@@ -37,7 +22,10 @@ export default function Connexion({ navigation }) {
       const response = await fetch('https://epencia.net/app/diako/api/connexion.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telephone, mdp }),
+        body: JSON.stringify({ 
+          telephone:telephone,
+           mdp:mdp
+          }),
       });
 
       const result = await response.json();
@@ -45,6 +33,9 @@ export default function Connexion({ navigation }) {
 
       if (result.length > 0 && result[0].telephone) {
         setUser(result[0]);
+        if (result[0].user_id) {
+          await AsyncStorage.setItem('matricule', result[0].user_id);
+        }
         navigation.navigate('Menu');
       } else {
         Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
@@ -57,7 +48,11 @@ export default function Connexion({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Connexion</Text>
+          <Image
+              source={require('../assets/images/logo.png')} 
+              style={styles.logo}
+            />
+      <Text style={styles.title}> Espace de Connexion</Text>
 
       <TextInput
         style={styles.input}
@@ -85,12 +80,15 @@ export default function Connexion({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleConnexion}>
+      <TouchableOpacity style={styles.button} onPress={Valider}>
         <Text style={styles.buttonText}>Se connecter</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-        <Text style={styles.linkText}>Pas encore inscrit ? S'inscrire</Text>
+        <Text style={styles.linkText}>Mot de pass oublier ? </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+        <Text style={styles.linkText}>Creer un compte ?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -104,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f2f2f2',
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -142,12 +140,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
   },
   linkText: {
     color: '#007bff',
     textAlign: 'center',
     marginTop: 15,
+  },
+
+   logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 10,
+    resizeMode: 'contain',
+     alignSelf: 'center',
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
