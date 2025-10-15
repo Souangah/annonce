@@ -1,16 +1,14 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, ImageBackground } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser'; // adapte ce chemin si besoin
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 export default function Connexion({ navigation }) {
   const [telephone, setTelephone] = useState('');
   const [mdp, setMdp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useContext(GlobalContext);
-
 
   const Valider = async () => {
     if (!telephone.trim() || !mdp.trim()) {
@@ -23,9 +21,9 @@ export default function Connexion({ navigation }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          telephone:telephone,
-           mdp:mdp
-          }),
+          telephone: telephone,
+          mdp: mdp
+        }),
       });
 
       const result = await response.json();
@@ -35,7 +33,7 @@ export default function Connexion({ navigation }) {
         setUser(result[0]);
         if (result[0].user_id) {
           await AsyncStorage.setItem('matricule', result[0].user_id);
-        }
+        }
         navigation.navigate('Menu');
       } else {
         Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
@@ -47,64 +45,76 @@ export default function Connexion({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-          <Image
-              source={require('../assets/images/logo.png')} 
-              style={styles.logo}
-            />
-      <Text style={styles.title}> Espace de Connexion</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Téléphone"
-        keyboardType="numeric"
-        value={telephone}
-        maxLength={10}
-        onChangeText={(text) => {
-          const cleanText = text.replace(/[^0-9]/g, '');
-          setTelephone(cleanText);
-        }}
-      />
-
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Mot de passe"
-          secureTextEntry={!showPassword}
-          value={mdp}
-          maxLength={4}
-          onChangeText={setMdp}
+    <ImageBackground
+      source={require('../assets/images/font1.jpg')} // Assurez-vous que l'image existe dans ce chemin
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Image
+          source={require('../assets/images/logo.png')} 
+          style={styles.logo}
         />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-          <Feather name={showPassword ? 'eye' : 'eye-off'} size={24} color="#888" />
+        <Text style={styles.title}>Espace de Connexion</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Téléphone"
+          keyboardType="numeric"
+          value={telephone}
+          maxLength={10}
+          onChangeText={(text) => {
+            const cleanText = text.replace(/[^0-9]/g, '');
+            setTelephone(cleanText);
+          }}
+        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Mot de passe"
+            secureTextEntry={!showPassword}
+            value={mdp}
+            maxLength={4}
+            onChangeText={setMdp}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+            <Feather name={showPassword ? 'eye' : 'eye-off'} size={24} color="#888" />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={Valider}>
+          <Text style={styles.buttonText}>Se connecter</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+          <Text style={styles.linkText}>Mot de passe oublié ?</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+          <Text style={styles.linkText}>Créer un compte ?</Text>
         </TouchableOpacity>
       </View>
-
-      <TouchableOpacity style={styles.button} onPress={Valider}>
-        <Text style={styles.buttonText}>Se connecter</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-        <Text style={styles.linkText}>Mot de pass oublier ? </Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
-        <Text style={styles.linkText}>Creer un compte ?</Text>
-      </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
     padding: 20,
     justifyContent: 'center',
-    backgroundColor: '#f2f2f2',
+   // Fond semi-transparent pour améliorer la lisibilité
   },
   title: {
     fontSize: 20,
     marginBottom: 20,
     textAlign: 'center',
+    color: '#333', // Couleur du texte ajustée pour contraste
   },
   input: {
     borderWidth: 1,
@@ -148,13 +158,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 15,
   },
-
-   logo: {
+  logo: {
     width: 150,
     height: 150,
     marginBottom: 10,
     resizeMode: 'contain',
-     alignSelf: 'center',
+    alignSelf: 'center',
     borderWidth: 1,
     borderRadius: 5,
     borderColor: '#ccc',
