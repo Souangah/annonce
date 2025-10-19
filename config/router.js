@@ -18,6 +18,7 @@ import Parametre from '../screens/parametre';
 import Plus from '../screens/autre-parametre';
 import Service from '../screens/service';
 import Notification from '../screens/notification-non-lu';
+import MenuTabs from './MenuTabs';
 
 
 
@@ -31,7 +32,7 @@ export default function Router() {
       <Stack.Navigator initialRouteName="Connexion">
         <Stack.Screen name="Connexion" component={Connexion} />
         <Stack.Screen name="Inscription" component={Inscription} />
-        <Stack.Screen name="Menu" component={Menu} options={{ headerShown: true }}/>
+        <Stack.Screen name="Menu" component={Menu} options={{ headerShown: false }}/>
         <Stack.Screen name="AjouterAnnonce" component={AjoutAnnonce} />
         <Stack.Screen name="ListeAnnonces" component={ListeAnnonces} />
          <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
@@ -44,6 +45,7 @@ export default function Router() {
           <Stack.Screen name="Plus" component={Plus} />
            <Stack.Screen name="Service" component={Service} />
            <Stack.Screen name="Notification" component={Notification} /> 
+           <Stack.Screen name="MenuTabs" component={MenuTabs} options={{headerShown: true}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

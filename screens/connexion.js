@@ -34,7 +34,7 @@ export default function Connexion({ navigation }) {
         if (result[0].user_id) {
           await AsyncStorage.setItem('matricule', result[0].user_id);
         }
-        navigation.navigate('Menu');
+        navigation.navigate('MenuTabs');
       } else {
         Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
       }

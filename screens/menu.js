@@ -1,257 +1,420 @@
-import React, { useLayoutEffect, useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
-import NotificationBadge from './notification-non-lu';
 
-const { width } = Dimensions.get('window');
-
-export default function Menu({ navigation }) {
+const Menu = () => {
+  const [liste, setListe] = useState([]);
   const [user] = useContext(GlobalContext);
-  const [showSolde, setShowSolde] = useState(true);
+  const [popularannonce, setPopularAnnonce] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingPopular, setLoadingPopular] = useState(true);
+  const [error, setError] = useState(null);
 
-    const [count, setCount] = useState(0);
+  useEffect(() => {
+    getAnnonce();
+  }, []);
 
-  
-    // Fonction pour récupérer les notifications non lues
-    const fetchCount = async () => {
+  const getAnnonce = async () => {
+    // Vérifier si user_id est disponible
+    if (!user?.user_id) {
+      console.warn('user_id non disponible');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`https://epencia.net/app/souangah/annonce/annonce-utilisateur.php?user_id=${user.user_id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Vérifier la structure de la réponse
+      if (result.status === 'success' && Array.isArray(result.annonces)) {
+        setListe(result.annonces);
+      } else if (Array.isArray(result)) {
+        // Si la réponse est directement un tableau
+        setListe(result);
+      } else {
+        console.warn('Structure de données inattendue:', result);
+        setListe([]);
+        setError('Format de données non reconnu');
+      }
+    } catch (error) {
+      console.error('Erreur Top Annonces:', error);
+      setError('Erreur de chargement des annonces');
+      setListe([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchPopularAnnonces = async () => {
       try {
-        const res = await fetch(`https://epencia.net/app/souangah/annonce/notification-non-lu.php?user_id=${user?.user_id}`);
-        const data = await res.json();
- 
-          setCount(data[0].total);
-          //console.error('ok:', data[0].total);
-       
-      } catch (error) {
-        console.error('Erreur de connexion1:', error);
+        setLoadingPopular(true);
+        const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Vérifier que data est un tableau
+        if (Array.isArray(data)) {
+          setPopularAnnonce(data);
+        } else {
+          console.warn('Les données populaires ne sont pas un tableau:', data);
+          setPopularAnnonce([]);
+        }
+      } catch (err) {
+        console.error('Erreur Annonces Populaires:', err);
+        setPopularAnnonce([]);
       } finally {
-        setLoading(false);
+        setLoadingPopular(false);
       }
     };
-  
-    useEffect(() => {
-      fetchCount();
-      const interval = setInterval(fetchCount, 10000); // actualise chaque 60 sec
-      return () => clearInterval(interval);
-    }, []);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: '',
-      headerStyle: {
-        backgroundColor: '#fff',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
-      headerTintColor: '#000000',
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', marginRight: 15, alignItems: 'center' }}>
-          <NotificationBadge
-            userId={user?.code_utilisateur}
-            onPress={() => navigation.navigate('Notification')}
-          />
-        {count > 0 && (
-  <View style={{
-    position: 'absolute',
-    top: 0,
-    left: 25,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'red',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }}>
-    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-      {count}
-    </Text>
-  </View>
-)}
+    fetchPopularAnnonces();
+  }, []);
 
-          <TouchableOpacity onPress={() => navigation.navigate('Connexion')} style={{ marginLeft: 15 }}>
-            <Ionicons name="log-out-outline" size={22} color="#000000" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, user]);
+  // Fonction pour diviser le tableau en groupes de 2
+  const chunkArray = (array, chunkSize) => {
+    if (!Array.isArray(array)) return [];
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
+  };
+
+  const popularChunks = chunkArray(popularannonce, 2);
+
+  // URLs d'images fiables depuis Unsplash
+  const imageUrls = {
+    header: 'https://images.unsplash.com/photo-1549399542-7e7f0edb80d8?w=150&h=150&fit=crop',
+    logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=50&h=50&fit=crop',
+    recent: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=200&h=100&fit=crop'
+  };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => setShowSolde(!showSolde)} activeOpacity={0.8}>
-        <View style={styles.soldeCard}>
-          <View style={styles.cardHeaderOnly}>
-            <Text style={styles.cardLabel}>Mon solde</Text>
-            <Text style={styles.cardSolde}>
-              {showSolde ? `${user?.solde || 0} FCFA` : '*********'}
-            </Text>
-          </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <Image
+          source={{ uri: imageUrls.header }}
+          style={styles.headerImage}
+          resizeMode="cover"
+          onError={(e) => console.log('Header image failed to load')}
+        />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>Votre véhicule à crédit</Text>
+          <Image
+            source={{ uri: imageUrls.logo }}
+            style={styles.logo}
+            resizeMode="contain"
+            onError={(e) => console.log('Logo failed to load')}
+          />
         </View>
-      </TouchableOpacity>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, styles.retrait]} onPress={() => navigation.navigate('Retrait')}>
-          <Ionicons name="cash-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.buttonText}>Retrait</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.button, styles.recharge]} onPress={() => navigation.navigate('Rechargement')}>
-          <Ionicons name="wallet-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-          <Text style={styles.buttonText}>Recharger</Text>
-        </TouchableOpacity>
       </View>
 
-      <View style={styles.transactionContainer}>
-        <Text style={styles.transactionTitle}>Dernières transactions</Text>
-        {[
-          { id: 1, type: 'Recharge', montant: 5000, date: '2025-07-14' },
-          { id: 2, type: 'Retrait', montant: 2000, date: '2025-07-13' },
-          { id: 3, type: 'Recharge', montant: 3000, date: '2025-07-12' },
-        ].map((tx) => (
-          <View key={tx.id} style={styles.transactionItem}>
-            <Ionicons
-              name={tx.type === 'Recharge' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
-              size={20}
-              color={tx.type === 'Recharge' ? '#4CAF50' : '#f44336'}
-              style={{ marginRight: 10 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.txLabel}>{tx.type}</Text>
-              <Text style={styles.txDate}>{tx.date}</Text>
+      {/* Top Announcements Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Top Annonces</Text>
+        <TouchableOpacity>
+          <Text style={styles.viewAll}>Toutes ></Text>
+        </TouchableOpacity>
+      </View>
+      
+      {loading ? (
+        <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={getAnnonce}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      ) : !liste || liste.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Aucune annonce disponible</Text>
+        </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.announcementScroll}>
+          {liste.map((item, index) => (
+            <View key={index} style={styles.announcement}>
+              <Image
+                source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+                style={styles.announcementImage}
+                resizeMode="cover"
+                onError={(e) => console.log('Image failed to load')}
+              />
+              <Text style={styles.price}>{item.prix_normal} FCFA</Text>
+              <Text style={styles.carName} numberOfLines={2}>{item.description}</Text>
+              <TouchableOpacity style={styles.contactButton}>
+                <Text style={styles.contactText}>CONTACTER</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={[styles.txAmount, { color: tx.type === 'Recharge' ? '#4CAF50' : '#f44336' }]}>
-              {tx.type === 'Recharge' ? '+' : '-'} {tx.montant} FCFA
-            </Text>
-          </View>
-        ))}
-      </View>
+          ))}
+        </ScrollView>
+      )}
 
-      <View style={styles.bottomMenu}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Accueil')}>
-          <Ionicons name="home" size={24} color="#000000" />
-          <Text style={styles.menuLabel}>Accueil</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ListeAnnonces')}>
-          <Ionicons name="briefcase-outline" size={24} color="#000" />
-          <Text style={styles.menuLabel}>les Annonces</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.mainActionButton} onPress={() => navigation.navigate('AjouterAnnonce', { user })}>
-          <Ionicons name="add" size={40} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AnnonceUtilisateur')}>
-          <Ionicons name="briefcase-outline" size={24} color="#000" />
-          <Text style={styles.menuLabel}>Mes Annonces</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Parametre')}>
-          <Ionicons name="settings-outline" size={24} color="#000000" />
-          <Text style={styles.menuLabel}>Paramètre</Text>
+      {/* Section Annonces Populaires */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Annonces populaires</Text>
+        <TouchableOpacity>
+          <Text style={styles.viewAll}>Voir plus ></Text>
         </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Grid des annonces populaires - 2 par ligne */}
+      {loadingPopular ? (
+        <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
+      ) : !popularannonce || popularannonce.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Aucune annonce populaire disponible</Text>
+        </View>
+      ) : (
+        <View style={styles.popularGrid}>
+          {popularChunks.map((chunk, chunkIndex) => (
+            <View key={chunkIndex} style={styles.popularRow}>
+              {chunk.map((item, index) => (
+                <View key={`${chunkIndex}-${index}`} style={styles.popularAnnouncement}>
+                  <Image
+                    source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+                    style={styles.popularImage}
+                    resizeMode="cover"
+                    onError={(e) => console.log('Popular image failed to load')}
+                  />
+                  <View style={styles.popularContent}>
+                    <Text style={styles.popularTitle} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                    <Text style={styles.popularPrice}>{item.prix_normal} FCFA</Text>
+                    <Text style={styles.popularLocation}>Abidjan, Cocody</Text>
+                    <TouchableOpacity style={styles.detailsButton}>
+                      <Text style={styles.detailsText}>Voir détails</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              {/* Si le chunk n'a qu'un élément, ajouter un espace vide pour l'alignement */}
+              {chunk.length === 1 && <View style={styles.emptySpace} />}
+            </View>
+          ))}
+        </View>
+      )}
+
+    </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f0f0' },
-  soldeCard: {
-    backgroundColor: '#02080cff',
-    width: width * 0.9,
-    alignSelf: 'center',
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    alignItems: 'center',
-    marginTop: 20,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5' 
   },
-  cardHeaderOnly: { alignItems: 'center' },
-  cardLabel: { color: '#fff', fontSize: 18, fontWeight: '300' },
-  cardSolde: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginTop: 10 },
-
-  buttonContainer: {
+  loading: {
+    marginVertical: 20,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: 20,
+    marginVertical: 10,
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 20,
+    marginVertical: 10,
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 15,
+    backgroundColor: '#1a1a1a',
+    marginBottom: 15 
+  },
+  headerImage: { 
+    width: 80, 
+    height: 80,
+    borderRadius: 8 
+  },
+  headerText: { 
+    marginLeft: 15, 
+    flex: 1 
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#fff',
+    marginBottom: 8 
+  },
+  logo: { 
+    width: 150, 
+    height: 120 
+  },
+  section: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    marginVertical: 10 
+  },
+  sectionTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold',
+    color: '#333' 
+  },
+  viewAll: { 
+    color: '#007AFF',
+    fontWeight: '500' 
+  },
+  announcementScroll: {
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  announcement: { 
+    alignItems: 'center', 
+    width: 160,
+    backgroundColor: '#fff',
+    marginHorizontal: 5,
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  announcementImage: { 
+    width: 120, 
+    height: 80, 
+    marginBottom: 8,
+    borderRadius: 6 
+  },
+  price: { 
+    fontSize: 16, 
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginBottom: 4 
+  },
+  carName: { 
+    fontSize: 14, 
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 8,
+    fontWeight: '500',
+    height: 40,
+  },
+  contactButton: { 
+    backgroundColor: '#21a403ff', 
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    width: '100%'
+  },
+  contactText: { 
+    color: '#fff', 
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
+  recentSection: {
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  recentImage: { 
+    width: '100%', 
+    height: 120,
+    borderRadius: 8 
+  },
+  // Styles pour la grille des annonces populaires
+  popularGrid: {
+    paddingHorizontal: 10,
+    marginBottom: 20,
+  },
+  popularRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 20,
+    marginBottom: 15,
   },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    elevation: 2,
-    marginHorizontal: 5,
-  },
-  retrait: { backgroundColor: '#0c0302ff' },
-  recharge: { backgroundColor: '#070d12ff' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-
-  transactionContainer: { marginTop: 30, paddingHorizontal: 20 },
-  transactionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#000' },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  popularAnnouncement: {
+    width: '48%',
     backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden'
   },
-  txLabel: { fontSize: 14, fontWeight: '500', color: '#000' },
-  txDate: { fontSize: 12, color: '#666' },
-  txAmount: { fontSize: 14, fontWeight: 'bold' },
-
-  bottomMenu: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#f0f0f0',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingBottom: 24,
-    paddingHorizontal: 10,
-    position: 'absolute',
-    bottom: 30,
+  emptySpace: {
+    width: '48%',
   },
-  menuItem: {
-    alignItems: 'center',
-    flex: 1,
-    paddingVertical: 8,
+  popularImage: {
+    width: '100%',
+    height: 120,
   },
-  menuLabel: {
-    fontSize: 9,
-    color: '#000',
-    marginTop: 6,
-    fontWeight: '500',
+  popularContent: {
+    padding: 10,
   },
-  mainActionButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    marginTop: -25,
+  popularTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+    height: 40,
+  },
+  popularPrice: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginBottom: 4,
+  },
+  popularLocation: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  detailsButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start'
+  },
+  detailsText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
   },
 });
+
+export default Menu;
