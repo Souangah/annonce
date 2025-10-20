@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
 
 const Menu = () => {
@@ -9,35 +9,30 @@ const Menu = () => {
   const [loading, setLoading] = useState(true);
   const [loadingPopular, setLoadingPopular] = useState(true);
   const [error, setError] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedAnnonce, setSelectedAnnonce] = useState(null);
 
   useEffect(() => {
     getAnnonce();
   }, []);
 
   const getAnnonce = async () => {
-    // Vérifier si user_id est disponible
     if (!user?.user_id) {
       console.warn('user_id non disponible');
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
       const response = await fetch(`https://epencia.net/app/souangah/annonce/annonce-utilisateur.php?user_id=${user.user_id}`);
-      
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
       }
-      
       const result = await response.json();
-      
-      // Vérifier la structure de la réponse
       if (result.status === 'success' && Array.isArray(result.annonces)) {
         setListe(result.annonces);
       } else if (Array.isArray(result)) {
-        // Si la réponse est directement un tableau
         setListe(result);
       } else {
         console.warn('Structure de données inattendue:', result);
@@ -58,14 +53,10 @@ const Menu = () => {
       try {
         setLoadingPopular(true);
         const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
-        
         if (!response.ok) {
           throw new Error(`Erreur HTTP: ${response.status}`);
         }
-        
         const data = await response.json();
-        
-        // Vérifier que data est un tableau
         if (Array.isArray(data)) {
           setPopularAnnonce(data);
         } else {
@@ -79,11 +70,9 @@ const Menu = () => {
         setLoadingPopular(false);
       }
     };
-
     fetchPopularAnnonces();
   }, []);
 
-  // Fonction pour diviser le tableau en groupes de 2
   const chunkArray = (array, chunkSize) => {
     if (!Array.isArray(array)) return [];
     const chunks = [];
@@ -95,11 +84,62 @@ const Menu = () => {
 
   const popularChunks = chunkArray(popularannonce, 2);
 
-  // URLs d'images fiables depuis Unsplash
   const imageUrls = {
     header: 'https://images.unsplash.com/photo-1549399542-7e7f0edb80d8?w=150&h=150&fit=crop',
     logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=50&h=50&fit=crop',
-    recent: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=200&h=100&fit=crop'
+    recent: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=200&h=100&fit=crop',
+  };
+
+  const openModal = (annonce) => {
+    setSelectedAnnonce(annonce);
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedAnnonce(null);
+  };
+
+  const handleWhatsApp = () => {
+    if (!selectedAnnonce?.telephone) {
+      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
+      return;
+    }
+    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
+    const url = `whatsapp://send?phone=${phoneNumber}&text=Bonjour, je suis intéressé par votre annonce: ${selectedAnnonce?.description}`;
+    Linking.openURL(url).catch((err) => {
+      console.error('Erreur WhatsApp:', err);
+      Alert.alert('Erreur', 'Impossible d\'ouvrir WhatsApp. Vérifiez si l\'application est installée.');
+    });
+    closeModal();
+  };
+
+  const handleCall = () => {
+    if (!selectedAnnonce?.telephone) {
+      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
+      return;
+    }
+    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
+    const url = `tel:${phoneNumber}`;
+    Linking.openURL(url).catch((err) => {
+      console.error('Erreur Appel:', err);
+      Alert.alert('Erreur', 'Impossible de passer l\'appel.');
+    });
+    closeModal();
+  };
+
+  const handleMessage = () => {
+    if (!selectedAnnonce?.telephone) {
+      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
+      return;
+    }
+    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
+    const url = `sms:${phoneNumber}?body=Bonjour, je suis intéressé par votre annonce: ${selectedAnnonce?.description}`;
+    Linking.openURL(url).catch((err) => {
+      console.error('Erreur SMS:', err);
+      Alert.alert('Erreur', 'Impossible d\'envoyer le SMS.');
+    });
+    closeModal();
   };
 
   return (
@@ -130,7 +170,7 @@ const Menu = () => {
           <Text style={styles.viewAll}>Toutes ></Text>
         </TouchableOpacity>
       </View>
-      
+
       {loading ? (
         <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
       ) : error ? (
@@ -154,9 +194,11 @@ const Menu = () => {
                 resizeMode="cover"
                 onError={(e) => console.log('Image failed to load')}
               />
+              
               <Text style={styles.price}>{item.prix_normal} FCFA</Text>
+              <Text style={styles.price}>{item.prix_promo} FCFA</Text>
               <Text style={styles.carName} numberOfLines={2}>{item.description}</Text>
-              <TouchableOpacity style={styles.contactButton}>
+              <TouchableOpacity style={styles.contactButton} onPress={() => openModal(item)}>
                 <Text style={styles.contactText}>CONTACTER</Text>
               </TouchableOpacity>
             </View>
@@ -172,7 +214,6 @@ const Menu = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Grid des annonces populaires - 2 par ligne */}
       {loadingPopular ? (
         <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
       ) : !popularannonce || popularannonce.length === 0 ? (
@@ -197,27 +238,73 @@ const Menu = () => {
                     </Text>
                     <Text style={styles.popularPrice}>{item.prix_normal} FCFA</Text>
                     <Text style={styles.popularLocation}>Abidjan, Cocody</Text>
-                    <TouchableOpacity style={styles.detailsButton}>
-                      <Text style={styles.detailsText}>Voir détails</Text>
-                    </TouchableOpacity>
+                    <View style={styles.buttonContainer}>
+                      <TouchableOpacity style={styles.detailsButton}>
+                        <Text style={styles.detailsText}>Voir détails</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.contactButtonSmall} onPress={() => openModal(item)}>
+                        <Text style={styles.contactTextSmall}>Contacter</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               ))}
-              {/* Si le chunk n'a qu'un élément, ajouter un espace vide pour l'alignement */}
               {chunk.length === 1 && <View style={styles.emptySpace} />}
             </View>
           ))}
         </View>
       )}
 
+      {/* Modal for Contact Options */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Contacter le vendeur</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalButton} onPress={handleWhatsApp}>
+                <Image
+                  source={{ uri: 'https://img.icons8.com/color/48/000000/whatsapp.png' }}
+                  style={styles.modalIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.modalButtonText}>WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={handleCall}>
+                <Image
+                  source={{ uri: 'https://img.icons8.com/color/48/000000/phone.png' }}
+                  style={styles.modalIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.modalButtonText}>Appeler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={handleMessage}>
+                <Image
+                  source={{ uri: 'https://img.icons8.com/color/48/000000/sms.png' }}
+                  style={styles.modalIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.modalButtonText}>Message</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>Fermer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f5f5f5' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   loading: {
     marginVertical: 20,
@@ -253,54 +340,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 15,
     backgroundColor: '#1a1a1a',
-    marginBottom: 15 
+    marginBottom: 15,
   },
-  headerImage: { 
-    width: 80, 
+  headerImage: {
+    width: 80,
     height: 80,
-    borderRadius: 8 
+    borderRadius: 8,
   },
-  headerText: { 
-    marginLeft: 15, 
-    flex: 1 
+  headerText: {
+    marginLeft: 15,
+    flex: 1,
   },
-  headerTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8 
+    marginBottom: 8,
   },
-  logo: { 
-    width: 150, 
-    height: 120 
+  logo: {
+    width: 150,
+    height: 120,
   },
-  section: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  section: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    marginVertical: 10 
+    marginVertical: 10,
   },
-  sectionTitle: { 
-    fontSize: 20, 
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333' 
+    color: '#333',
   },
-  viewAll: { 
+  viewAll: {
     color: '#007AFF',
-    fontWeight: '500' 
+    fontWeight: '500',
   },
   announcementScroll: {
     paddingHorizontal: 10,
     marginBottom: 10,
   },
-  announcement: { 
-    alignItems: 'center', 
+  announcement: {
+    alignItems: 'center',
     width: 160,
     backgroundColor: '#fff',
     marginHorizontal: 5,
@@ -310,51 +397,54 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
   },
-  announcementImage: { 
-    width: 120, 
-    height: 80, 
+  announcementImage: {
+    width: 120,
+    height: 80,
     marginBottom: 8,
-    borderRadius: 6 
+    borderRadius: 6,
   },
-  price: { 
-    fontSize: 16, 
+  price: {
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FF6B00',
-    marginBottom: 4 
+    marginBottom: 4,
   },
-  carName: { 
-    fontSize: 14, 
+  carName: {
+    fontSize: 14,
     textAlign: 'center',
     color: '#333',
     marginBottom: 8,
     fontWeight: '500',
     height: 40,
   },
-  contactButton: { 
-    backgroundColor: '#21a403ff', 
+  contactButton: {
+    backgroundColor: '#21a403ff',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    width: '100%'
+    width: '100%',
   },
-  contactText: { 
-    color: '#fff', 
+  contactText: {
+    color: '#fff',
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
-  recentSection: {
-    paddingHorizontal: 15,
-    marginBottom: 20,
+  contactButtonSmall: {
+    backgroundColor: '#21a403ff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
-  recentImage: { 
-    width: '100%', 
-    height: 120,
-    borderRadius: 8 
+  contactTextSmall: {
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
-  // Styles pour la grille des annonces populaires
   popularGrid: {
     paddingHorizontal: 10,
     marginBottom: 20,
@@ -373,7 +463,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   emptySpace: {
     width: '48%',
@@ -403,17 +493,70 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   detailsButton: {
     backgroundColor: '#4CAF50',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    alignSelf: 'flex-start'
+    alignSelf: 'flex-start',
   },
   detailsText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 11,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 20,
+  },
+  modalButton: {
+    alignItems: 'center',
+  },
+  modalIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: 8,
+  },
+  modalButtonText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  closeButton: {
+    backgroundColor: '#FF0000',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
