@@ -1,24 +1,27 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, Modal, Dimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 import { Picker } from '@react-native-picker/picker';
+import { Video } from 'expo-av';
 
 export default function AjoutAnnonce() {
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
-  const [images, setImages] = useState([]);
+  const [medias, setMedias] = useState([]);
   const [id_annonce, Id_Annonce] = useState('');
   const [prix_promo, setPrix_Promo] = useState('');
   const [prix_normal, setPrix_Normal] = useState('');
   const [user, setUser] = useContext(GlobalContext);
   const [audience, setAudience] = useState('');
   const [prix_annonce, setPrix_Annonce] = useState('');
+  const [showMainModal, setShowMainModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
 
   useEffect(() => {
     Id_Annonce(generateId());
-    // Initialise prix_annonce au départ selon audience par défaut
     calculerPrixDepuisAudience(audience);
   }, []);
 
@@ -26,9 +29,8 @@ export default function AjoutAnnonce() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   };
 
-  // Nouvelle fonction : calcule le prix automatiquement
   const calculerPrixDepuisAudience = (val) => {
-    const prix = parseInt(val) * 25;
+    const prix = parseInt(val) * 30;
     setPrix_Annonce(prix.toString());
   };
 
@@ -42,11 +44,23 @@ export default function AjoutAnnonce() {
     return parseInt(price).toLocaleString('fr-FR');
   };
 
-  // activer l'appareil photo
+  // Vérifier si on peut ajouter plus de médias
+  const canAddMoreMedias = () => {
+    return medias.length < 4;
+  };
+
+  // Prendre une photo avec la caméra
   const takePhoto = async () => {
+    if (!canAddMoreMedias()) {
+      Alert.alert("Limite atteinte", "Vous ne pouvez ajouter que 4 médias maximum.");
+      setShowMainModal(false);
+      return;
+    }
+
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
       Alert.alert("Permission requise", "Autorisez l'accès à la caméra pour continuer.");
+      setShowMainModal(false);
       return;
     }
 
@@ -54,39 +68,118 @@ export default function AjoutAnnonce() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
 
     if (!result.canceled) {
-      setImages([result.assets[0].uri]);
-    } 
+      const newMedia = {
+        uri: result.assets[0].uri,
+        type: 'image',
+        name: `image_${Date.now()}.jpg`,
+        id: Date.now().toString()
+      };
+      setMedias(prev => [...prev, newMedia]);
+    }
+    setShowMainModal(false);
   };
 
-  // choisir une image dans la galerie
-  const choisirImage = async () => {
+  // Prendre une vidéo avec la caméra
+  const takeVideo = async () => {
+    if (!canAddMoreMedias()) {
+      Alert.alert("Limite atteinte", "Vous ne pouvez ajouter que 4 médias maximum.");
+      setShowMainModal(false);
+      return;
+    }
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission requise", "Autorisez l'accès à la caméra pour continuer.");
+      setShowMainModal(false);
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+      videoMaxDuration: 30,
+    });
+
+    if (!result.canceled) {
+      const newMedia = {
+        uri: result.assets[0].uri,
+        type: 'video',
+        name: `video_${Date.now()}.mp4`,
+        id: Date.now().toString()
+      };
+      setMedias(prev => [...prev, newMedia]);
+    }
+    setShowMainModal(false);
+  };
+
+  // Choisir depuis la galerie (images et vidéos mélangés)
+  const choisirMedia = async () => {
+    if (!canAddMoreMedias()) {
+      Alert.alert("Limite atteinte", "Vous ne pouvez ajouter que 4 médias maximum.");
+      setShowMainModal(false);
+      return;
+    }
+
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission requise', 'Autorisez l’accès à la galerie pour continuer.');
+      Alert.alert('Permission requise', 'Autorisez l\'accès à la galerie pour continuer.');
+      setShowMainModal(false);
       return;
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      videoMaxDuration: 30,
+      allowsMultipleSelection: true,
+      selectionLimit: 4 - medias.length
     });
 
     if (!result.canceled) {
-      setImages([result.assets[0].uri]);
+      const newMedias = result.assets.map((asset, index) => ({
+        uri: asset.uri,
+        type: asset.type === 'video' ? 'video' : 'image',
+        name: asset.type === 'video' ? `video_${Date.now()}_${index}.mp4` : `image_${Date.now()}_${index}.jpg`,
+        id: `${Date.now()}_${index}`
+      }));
+      
+      setMedias(prev => [...prev, ...newMedias]);
     }
+    setShowMainModal(false);
   };
 
-  const supprimerImage = () => {
-    setImages([]);
+  // Supprimer un média spécifique
+  const supprimerMedia = (mediaId) => {
+    setMedias(prev => prev.filter(media => media.id !== mediaId));
+  };
+
+  // Supprimer tous les médias
+  const supprimerTousMedias = () => {
+    setMedias([]);
+  };
+
+  // Ouvrir le visualiseur de média
+  const ouvrirMedia = (media) => {
+    setSelectedMedia(media);
+    setShowMediaViewer(true);
+  };
+
+  // Fermer le visualiseur de média
+  const fermerMediaViewer = () => {
+    setShowMediaViewer(false);
+    setSelectedMedia(null);
   };
 
   const validerAnnonce = async () => {
-    if (!titre || !description || !prix_normal || !prix_promo || images.length === 0) {
+    if (!titre || !description || !prix_normal || !prix_promo || medias.length === 0) {
       Alert.alert('Champs manquants', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -102,13 +195,34 @@ export default function AjoutAnnonce() {
     formData.append("prix_annonce", prix_annonce);
     formData.append("telephone", user.telephone);
 
-    images.forEach((uri, index) => {
-      formData.append("sai_photo", {
-        uri,
-        name: `image_${index}.jpg`,
-        type: 'image/jpeg',
+    // Ajouter la date actuelle et autres champs requis par votre table
+    const now = new Date();
+    formData.append("date", now.toISOString().split('T')[0]);
+    formData.append("heure", now.toTimeString().split(' ')[0]);
+    formData.append("type", "standard");
+    formData.append("json_client", JSON.stringify({}));
+    formData.append("vue", "0");
+    
+    // Calculer la date de fin (par exemple, 30 jours après)
+    const dateFin = new Date(now);
+    dateFin.setDate(dateFin.getDate() + 30);
+    formData.append("date_fin", dateFin.toISOString().split('T')[0]);
+    formData.append("duree", "30");
+
+    // Ajouter tous les médias
+    medias.forEach((media, index) => {
+      formData.append("sai_media[]", {
+        uri: media.uri,
+        name: media.name,
+        type: media.type === 'video' ? 'video/mp4' : 'image/jpeg',
       });
+      
+      // Ajouter les informations du média pour la table media_annonce
+      formData.append(`media_type_${index}`, media.type);
+      formData.append(`media_name_${index}`, media.name);
     });
+
+    formData.append("nombre_medias", medias.length.toString());
 
     try {
       const response = await fetch("https://epencia.net/app/souangah/annonce/AjouterAnnonce.php", {
@@ -123,18 +237,209 @@ export default function AjoutAnnonce() {
       Alert.alert("Message", result);
       console.log(result);
 
+      // Réinitialiser le formulaire
       setTitre('');
       setDescription('');
       setPrix_Normal('');
       setPrix_Promo('');
-      setImages([]);
+      setMedias([]);
       Id_Annonce(generateId());
       setAudience('');
-      calculerPrixDepuisAudience();
+      calculerPrixDepuisAudience('');
     } catch (error) {
       Alert.alert('Erreur', error.toString());
     }
   };
+
+  // Fonction pour afficher la prévisualisation
+  const renderMediaPreview = (media) => {
+    if (media.type === 'image') {
+      return <Image source={{ uri: media.uri }} style={styles.media} />;
+    } else {
+      return (
+        <View style={styles.videoContainer}>
+          <Ionicons name="videocam" size={30} color="#666" />
+          <Text style={styles.videoText}>Vidéo</Text>
+        </View>
+      );
+    }
+  };
+
+  // Afficher les emplacements vides pour la sélection
+  const renderEmptySlots = () => {
+    const emptySlots = [];
+    const totalSlots = 4;
+    const usedSlots = medias.length;
+    
+    for (let i = 0; i < totalSlots; i++) {
+      if (i < usedSlots) {
+        // Afficher le média existant
+        const media = medias[i];
+        emptySlots.push(
+          <TouchableOpacity 
+            key={media.id} 
+            style={styles.mediaWrapper}
+            onPress={() => ouvrirMedia(media)}
+          >
+            {renderMediaPreview(media)}
+            <TouchableOpacity 
+              style={styles.deleteButton} 
+              onPress={(e) => {
+                e.stopPropagation();
+                supprimerMedia(media.id);
+              }}
+            >
+              <Ionicons name="close" size={16} color="white" />
+            </TouchableOpacity>
+            <View style={styles.mediaBadge}>
+              <Text style={styles.mediaBadgeText}>
+                {media.type === 'video' ? 'VIDÉO' : 'IMAGE'}
+              </Text>
+            </View>
+            <View style={styles.mediaIndex}>
+              <Text style={styles.mediaIndexText}>{i + 1}</Text>
+            </View>
+            {media.type === 'video' && (
+              <View style={styles.playIconContainer}>
+                <Ionicons name="play" size={20} color="white" />
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      } else {
+        // Afficher un emplacement vide cliquable
+        emptySlots.push(
+          <TouchableOpacity 
+            key={`empty-${i}`}
+            style={styles.emptySlot}
+            onPress={() => setShowMainModal(true)}
+          >
+            <Ionicons name="images" size={30} color="#666" />
+            <Text style={styles.emptySlotText}>{i + 1}</Text>
+          </TouchableOpacity>
+        );
+      }
+    }
+    
+    return emptySlots;
+  };
+
+  // Modal principal pour les options
+  const MainModal = () => (
+    <Modal
+      visible={showMainModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowMainModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Ajouter un média</Text>
+          
+          <TouchableOpacity 
+            style={styles.modalOption} 
+            onPress={() => {
+              setShowMainModal(false);
+              setTimeout(() => showCameraOptions(), 300);
+            }}
+          >
+            <Ionicons name="camera" size={24} color="#007AFF" />
+            <Text style={styles.modalOptionText}>Appareil photo</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.modalOption} 
+            onPress={choisirMedia}
+          >
+            <Ionicons name="images" size={24} color="#007AFF" />
+            <Text style={styles.modalOptionText}>Choisir dans la galerie</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.modalCancelButton} 
+            onPress={() => setShowMainModal(false)}
+          >
+            <Text style={styles.modalCancelText}>Annuler</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Options pour l'appareil photo
+  const showCameraOptions = () => {
+    Alert.alert(
+      "Appareil photo",
+      "Que voulez-vous faire ?",
+      [
+        {
+          text: "Prendre une photo",
+          onPress: takePhoto
+        },
+        {
+          text: "Prendre une vidéo",
+          onPress: takeVideo
+        },
+        {
+          text: "Annuler",
+          style: "cancel"
+        }
+      ]
+    );
+  };
+
+  // Modal pour visualiser les médias en plein écran
+  const MediaViewerModal = () => (
+    <Modal
+      visible={showMediaViewer}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={fermerMediaViewer}
+    >
+      <View style={styles.mediaViewerOverlay}>
+        <TouchableOpacity 
+          style={styles.closeViewerButton} 
+          onPress={fermerMediaViewer}
+        >
+          <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        
+        {selectedMedia && (
+          <View style={styles.mediaViewerContent}>
+            {selectedMedia.type === 'image' ? (
+              <Image 
+                source={{ uri: selectedMedia.uri }} 
+                style={styles.fullScreenMedia} 
+                resizeMode="contain"
+              />
+            ) : (
+              <Video
+                source={{ uri: selectedMedia.uri }}
+                style={styles.fullScreenMedia}
+                useNativeControls
+                resizeMode="contain"
+                shouldPlay={false}
+                isLooping={false}
+              />
+            )}
+          </View>
+        )}
+        
+        <TouchableOpacity 
+          style={styles.deleteViewerButton} 
+          onPress={() => {
+            if (selectedMedia) {
+              supprimerMedia(selectedMedia.id);
+              fermerMediaViewer();
+            }
+          }}
+        >
+          <Ionicons name="trash" size={20} color="white" />
+          <Text style={styles.deleteViewerText}>Supprimer</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -195,32 +500,34 @@ export default function AjoutAnnonce() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.label}>Photo</Text>
-        <View style={styles.imagesContainer}>
-          {images.map((uri, index) => (
-            <View key={index} style={styles.imageWrapper}>
-              <Image source={{ uri }} style={styles.image} />
-              <TouchableOpacity 
-                style={styles.deleteButton} 
-                onPress={supprimerImage}
-              >
-                <Ionicons name="close" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          ))}
-          {images.length === 0 && (
-            <>
-              <TouchableOpacity style={styles.addImageButton} onPress={takePhoto}>
-                <Ionicons name="camera" size={25} color="#666" />
-                <Text style={styles.addImageText}>Prendre une photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.addImageButton} onPress={choisirImage}>
-                <Ionicons name="images" size={25} color="#666" />
-                <Text style={styles.addImageText}>Galerie</Text>
-              </TouchableOpacity>
-            </>
-          )}
+        <View style={styles.mediaHeader}>
+          <Text style={styles.label}>Médias (Images ou Vidéos)</Text>
+          <Text style={styles.mediaCounter}>
+            {medias.length}/4 médias
+          </Text>
         </View>
+        
+        {medias.length > 0 && (
+          <TouchableOpacity style={styles.clearAllButton} onPress={supprimerTousMedias}>
+            <Text style={styles.clearAllText}>Tout supprimer</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.mediaContainer}>
+          {renderEmptySlots()}
+        </View>
+
+        {medias.length === 0 && (
+          <Text style={styles.helperText}>
+            Cliquez sur les emplacements pour ajouter des images ou vidéos
+          </Text>
+        )}
+
+        {!canAddMoreMedias() && (
+          <Text style={styles.limitText}>
+            Maximum 4 médias atteint
+          </Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -248,7 +555,7 @@ export default function AjoutAnnonce() {
           style={styles.input}
           placeholder="Prix à payer pour publier"
           value={prix_annonce}
-          editable={false} // désactivé car prix calculé automatiquement
+          editable={false}
           keyboardType='numeric'
         />
       </View>
@@ -256,9 +563,15 @@ export default function AjoutAnnonce() {
       <TouchableOpacity style={styles.validerButton} onPress={validerAnnonce}>
         <Text style={styles.validerButtonText}>Publier l'annonce</Text>
       </TouchableOpacity>
+
+      {/* Modals */}
+      <MainModal />
+      <MediaViewerModal />
     </ScrollView>
   );
 }
+
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -301,50 +614,145 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 10,
   },
-  imagesContainer: {
+  mediaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  mediaCounter: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  mediaContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 10,
   },
-  imageWrapper: {
-    width: 300,
-    height: 200,
+  mediaWrapper: {
+    width: 100,
+    height: 100,
     marginRight: 10,
     marginBottom: 10,
     position: 'relative',
   },
-  image: {
+  emptySlot: {
+    width: 100,
+    height: 100,
+    marginRight: 10,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+  },
+  emptySlotText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  media: {
     width: '100%',
     height: '100%',
-    borderRadius: 10,
+    borderRadius: 8,
+  },
+  videoContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  videoText: {
+    marginTop: 5,
+    fontSize: 10,
+    color: '#666',
   },
   deleteButton: {
     position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: -5,
+    right: -5,
+    backgroundColor: 'red',
     borderRadius: 10,
     width: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
-  addImageButton: {
-    width: 150,
-    height: 70,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  mediaBadge: {
+    position: 'absolute',
+    bottom: 5,
+    left: 5,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  mediaBadgeText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  mediaIndex: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    width: 20,
+    height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    marginRight: 15,
   },
-  addImageText: {
-    marginTop: 5,
+  mediaIndexText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  playIconContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -10 }, { translateY: -10 }],
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearAllButton: {
+    alignSelf: 'flex-end',
+    padding: 8,
+    backgroundColor: '#ff6b6b',
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  clearAllText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  helperText: {
     fontSize: 12,
     color: '#666',
-    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 5,
+  },
+  limitText: {
+    fontSize: 12,
+    color: '#ff6b6b',
+    fontWeight: '600',
+    marginTop: 5,
   },
   validerButton: {
     backgroundColor: '#000000ff',
@@ -374,5 +782,91 @@ const styles = StyleSheet.create({
   picker: {
     height: 60,
     width: '100%',
+  },
+  // Styles pour les modals
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    width: '80%',
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#333',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    marginLeft: 15,
+    color: '#333',
+  },
+  modalCancelButton: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#ff3b30',
+    fontWeight: '600',
+  },
+  // Styles pour le visualiseur de médias
+  mediaViewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaViewerContent: {
+    width: width,
+    height: height * 0.8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenMedia: {
+    width: '100%',
+    height: '100%',
+  },
+  closeViewerButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    padding: 5,
+  },
+  deleteViewerButton: {
+    position: 'absolute',
+    bottom: 130,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,0,0,0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  deleteViewerText: {
+    color: 'white',
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

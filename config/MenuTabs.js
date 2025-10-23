@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GlobalContext } from '../config/GlobalUser';
-import NotificationBadge from '../screens/notification-non-lu';
+import Notification from '../screens/notification-non-lu';
 
 // Importez vos screens ici
 import Accueil from '../screens/accueil';
@@ -12,7 +12,7 @@ import AjouterAnnonce from '../screens/aj-annonce';
 import AnnonceUtilisateur from '../screens/annonce-utilisateur';
 import Parametre from '../screens/parametre';
 import Menu from '../screens/menu';
-
+import NotificationsScreen from '../screens/notification-non-lu'; // Nouvel écran
 
 const Tab = createBottomTabNavigator();
 
@@ -33,16 +33,19 @@ export default function MenuTabs({ navigation }) {
       const data = await res.json();
       if (data && data[0]?.total) {
         setCount(data[0].total);
+      } else {
+        setCount(0);
       }
     } catch (error) {
       console.error('Erreur de connexion:', error);
+      setCount(0);
     }
   };
 
   useEffect(() => {
     if (user?.user_id) {
       fetchCount();
-      const interval = setInterval(fetchCount, 10000); // actualise chaque 10 secondes
+      const interval = setInterval(fetchCount, 10000);
       return () => clearInterval(interval);
     }
   }, [user?.user_id]);
@@ -58,24 +61,35 @@ export default function MenuTabs({ navigation }) {
       headerTintColor: '#000000',
       headerRight: () => (
         <View style={styles.headerRight}>
-          <NotificationBadge
-            userId={user?.code_utilisateur}
+          <TouchableOpacity 
             onPress={() => navigation.navigate('Notification')}
-          />
-          {count > 0 && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{count}</Text>
-            </View>
-          )}
+            style={styles.notificationButton}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#000000" />
+            {count > 0 && (
+              <View style={styles.badgeContainer}>
+                <Text style={styles.badgeText}>
+                  {count > 99 ? '99+' : count}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.soldeContainer}>
+            <Text style={styles.labelsolde}>Solde</Text>
+            <Text style={styles.footersolde}>{user?.solde || 0} FCFA</Text>
+          </View>
+          
           <TouchableOpacity
             onPress={() => navigation.navigate('MenuSolde')}
-            style={styles.soldeButton}
+            style={styles.iconButton}
           >
             <Ionicons name="wallet-outline" size={22} color="#000000" />
           </TouchableOpacity>
+          
           <TouchableOpacity
             onPress={() => navigation.navigate('Connexion')}
-            style={styles.logoutButton}
+            style={styles.iconButton}
           >
             <Ionicons name="log-out-outline" size={22} color="#000000" />
           </TouchableOpacity>
@@ -100,13 +114,13 @@ export default function MenuTabs({ navigation }) {
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'ListeAnnonces':
-              iconName = 'briefcase-outline';
+              iconName = focused ? 'briefcase' : 'briefcase-outline';
               break;
             case 'AjouterAnnonce':
               iconName = 'add';
               break;
             case 'AnnonceUtilisateur':
-              iconName = 'briefcase-outline';
+              iconName = focused ? 'document-text' : 'document-text-outline';
               break;
             case 'Parametre':
               iconName = focused ? 'settings' : 'settings-outline';
@@ -140,7 +154,6 @@ export default function MenuTabs({ navigation }) {
       <Tab.Screen
         name="AjouterAnnonce"
         component={AjouterAnnonce}
-        initialParams={{ user }}
         options={{ tabBarLabel: 'Ajouter' }}
       />
       <Tab.Screen
@@ -156,47 +169,61 @@ export default function MenuTabs({ navigation }) {
     </Tab.Navigator>
   );
 }
+
 const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     marginRight: 15,
     alignItems: 'center',
+    gap: 15,
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 5,
   },
   badgeContainer: {
     position: 'absolute',
     top: 0,
-    left: 25,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    right: 0,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'red',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
   },
-  soldeButton: {
-    marginLeft: 15,
+  soldeContainer: {
+    alignItems: 'center',
   },
-  logoutButton: {
-    marginLeft: 15,
+  labelsolde: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  footersolde: {
+    fontSize: 10,
+    color: '#666',
+  },
+  iconButton: {
+    padding: 5,
   },
   tabBarStyle: {
     backgroundColor: '#fff',
-    height: 55, // Reduced height to move tabs upward
+    height: 55,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    paddingBottom: 2, // Reduced padding to shift tabs up
+    paddingBottom: 2,
     paddingTop: 10,
-    marginBottom: 40, // Negative margin to pull the tab bar higher
   },
   tabBarLabelStyle: {
     fontSize: 9,
     fontWeight: '500',
-    marginBottom: 8, // Adjusted to keep labels aligned with icons
+    marginBottom: 8,
   },
   mainActionButton: {
     width: 56,
@@ -205,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -25, // Adjusted to align with the raised tab bar
+    marginTop: -25,
     elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
