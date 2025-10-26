@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import {View,Text, FlatList,Image,StyleSheet,TouchableOpacity,ActivityIndicator,Linking,TextInput} from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, TextInput, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Video } from 'expo-av';
 import { GlobalContext } from '../config/GlobalUser';
 
 export default function ListeAnnonce({ navigation }) {
@@ -10,13 +11,13 @@ export default function ListeAnnonce({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [rechercher, setRechercher] = useState('');
   const [user] = useContext(GlobalContext);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState({});
 
   useEffect(() => {
     getAnnonce();
   }, []);
 
   useEffect(() => {
-    // Filtrer les annonces quand la recherche change
     if (rechercher) {
       const filtered = liste.filter(item => 
         item.titre.toLowerCase().includes(rechercher.toLowerCase()) ||
@@ -47,7 +48,114 @@ export default function ListeAnnonce({ navigation }) {
     getAnnonce();
   };
 
+  const handleMediaPress = (annonceId, index) => {
+    setSelectedMediaIndex(prev => ({
+      ...prev,
+      [annonceId]: index
+    }));
+  };
 
+  const renderMedia = (item) => {
+    if (!item.medias || item.medias.length === 0) {
+      return (
+        <View style={styles.mediaContainer}>
+          <Image 
+            source={{ uri: `data:${item.type};base64,${item.photo64}` }}
+            style={styles.singleMedia}
+            resizeMode="cover"
+          />
+        </View>
+      );
+    }
+
+    const currentIndex = selectedMediaIndex[item.id_annonce] || 0;
+    const currentMedia = item.medias[currentIndex];
+
+    return (
+      <View style={styles.mediaContainer}>
+        {/* Media principal */}
+        {currentMedia.type_media === 'image' ? (
+          <Image 
+            source={{ uri: `data:${currentMedia.type_fichier};base64,${currentMedia.fichier64}` }}
+            style={styles.singleMedia}
+            resizeMode="cover"
+          />
+        ) : (
+          <Video
+            source={{ uri: `data:${currentMedia.type_fichier};base64,${currentMedia.fichier64}` }}
+            style={styles.singleMedia}
+            useNativeControls
+            resizeMode="cover"
+            shouldPlay={false}
+          />
+        )}
+
+        {/* Indicateur de position si plusieurs médias */}
+        {item.medias.length > 1 && (
+          <View style={styles.mediaIndicator}>
+            <Text style={styles.mediaIndicatorText}>
+              {currentIndex + 1} / {item.medias.length}
+            </Text>
+          </View>
+        )}
+
+        {/* Boutons de navigation si plusieurs médias */}
+        {item.medias.length > 1 && (
+          <>
+            {currentIndex > 0 && (
+              <TouchableOpacity 
+                style={[styles.navButton, styles.prevButton]}
+                onPress={() => handleMediaPress(item.id_annonce, currentIndex - 1)}
+              >
+                <Ionicons name="chevron-back" size={24} color="white" />
+              </TouchableOpacity>
+            )}
+            {currentIndex < item.medias.length - 1 && (
+              <TouchableOpacity 
+                style={[styles.navButton, styles.nextButton]}
+                onPress={() => handleMediaPress(item.id_annonce, currentIndex + 1)}
+              >
+                <Ionicons name="chevron-forward" size={24} color="white" />
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {/* Miniatures des médias */}
+        {item.medias.length > 1 && (
+          <ScrollView 
+            horizontal 
+            style={styles.thumbnailsContainer}
+            showsHorizontalScrollIndicator={false}
+          >
+            {item.medias.map((media, index) => (
+              <TouchableOpacity
+                key={media.id_media}
+                style={[
+                  styles.thumbnail,
+                  index === currentIndex && styles.thumbnailActive
+                ]}
+                onPress={() => handleMediaPress(item.id_annonce, index)}
+              >
+                {media.type_media === 'image' ? (
+                  <Image 
+                    source={{ uri: `data:${media.type_fichier};base64,${media.fichier64}` }}
+                    style={styles.thumbnailImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.thumbnailVideo}>
+                    <Ionicons name="videocam" size={16} color="white" />
+                    <Text style={styles.thumbnailVideoText}>Vidéo</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
@@ -61,33 +169,27 @@ export default function ListeAnnonce({ navigation }) {
           <Text style={styles.name}>{user?.nom_prenom || "Utilisateur"}</Text>
           <Text style={styles.sponsored}>Sponsorisé</Text>
         </View>
-      </View>
-
-      {/* Ligne de séparation */}
-      <View style={styles.separator} />
-
-      {/* Message de promotion */}
-      <View style={styles.promotionContainer}>
         <View style={styles.headerRight}>
           <Text style={styles.date}>{item.date} à {item.heure}</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Details d'annonce", { annonceId: item.id_annonce })}>
             <Ionicons name="eye" size={20} color="#ff4757" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.promotionText}>
-          {item.titre}
-        </Text>
       </View>
 
       {/* Ligne de séparation */}
       <View style={styles.separator} />
 
-      {/* Image principale */}
-      <Image 
-        source={{ uri: `data:${item.type};base64,${item.photo64}` }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      {/* Titre de l'annonce */}
+      <View style={styles.titleContainer}>
+        <Text style={styles.titleText}>{item.titre}</Text>
+      </View>
+
+      {/* Ligne de séparation */}
+      <View style={styles.separator} />
+
+      {/* Tous les médias de l'annonce */}
+      {renderMedia(item)}
 
       <View style={styles.content}>
         {/* Prix */}
@@ -96,7 +198,7 @@ export default function ListeAnnonce({ navigation }) {
           <Text style={styles.prixPromo}>{item.prix_promo} FCFA</Text>
         </View>
 
-        {/* description */}
+        {/* Description */}
         <Text style={styles.description}>{item.description}</Text>
 
         {/* Informations de vue et audience */}
@@ -110,6 +212,14 @@ export default function ListeAnnonce({ navigation }) {
             <Ionicons name="people-outline" size={16} color="#666" />
             <Text style={styles.statsText}>Audience: {item.audience}</Text>
           </View>
+
+          {/* Nombre de médias */}
+          {item.medias && item.medias.length > 0 && (
+            <View style={styles.statsItem}>
+              <Ionicons name="images" size={16} color="#666" />
+              <Text style={styles.statsText}>{item.medias.length} médias</Text>
+            </View>
+          )}
         </View>
 
         {/* Boutons d'action */}
@@ -184,6 +294,8 @@ export default function ListeAnnonce({ navigation }) {
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -255,34 +367,100 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerRight: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    alignItems: 'flex-end',
   },
   date: {
     fontSize: 12,
     color: '#666',
-    marginRight: 10,
+    marginBottom: 5,
   },
   separator: {
     height: 1,
     backgroundColor: '#eaeaea',
   },
-  promotionContainer: {
-    padding: 5,
+  titleContainer: {
+    padding: 15,
     backgroundColor: '#f8f9fa',
   },
-  promotionText: {
+  titleText: {
     fontSize: 18,
     color: '#333',
     textAlign: 'center',
+    fontWeight: 'bold',
   },
-  image: {
+  mediaContainer: {
+    position: 'relative',
+  },
+  singleMedia: {
     width: '100%',
     height: 300,
     backgroundColor: '#f0f0f0',
+  },
+  mediaIndicator: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  mediaIndicatorText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  navButton: {
+    position: 'absolute',
+    top: '50%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -20,
+  },
+  prevButton: {
+    left: 10,
+  },
+  nextButton: {
+    right: 10,
+  },
+  thumbnailsContainer: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    right: 10,
+    height: 60,
+  },
+  thumbnail: {
+    width: 50,
+    height: 50,
+    marginRight: 5,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  thumbnailActive: {
+    borderColor: '#4CAF50',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbnailVideo: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnailVideoText: {
+    color: 'white',
+    fontSize: 8,
+    marginTop: 2,
   },
   content: {
     padding: 15,

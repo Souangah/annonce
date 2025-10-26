@@ -15,6 +15,7 @@ export default function AjoutAnnonce() {
   const [prix_normal, setPrix_Normal] = useState('');
   const [user, setUser] = useContext(GlobalContext);
   const [audience, setAudience] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [prix_annonce, setPrix_Annonce] = useState('');
   const [showMainModal, setShowMainModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -193,21 +194,7 @@ export default function AjoutAnnonce() {
     formData.append("user_id", user.user_id);
     formData.append("audience", audience);
     formData.append("prix_annonce", prix_annonce);
-    formData.append("telephone", user.telephone);
-
-    // Ajouter la date actuelle et autres champs requis par votre table
-    const now = new Date();
-    formData.append("date", now.toISOString().split('T')[0]);
-    formData.append("heure", now.toTimeString().split(' ')[0]);
-    formData.append("type", "standard");
-    formData.append("json_client", JSON.stringify({}));
-    formData.append("vue", "0");
-    
-    // Calculer la date de fin (par exemple, 30 jours après)
-    const dateFin = new Date(now);
-    dateFin.setDate(dateFin.getDate() + 30);
-    formData.append("date_fin", dateFin.toISOString().split('T')[0]);
-    formData.append("duree", "30");
+    formData.append("telephone", telephone);
 
     // Ajouter tous les médias
     medias.forEach((media, index) => {
@@ -445,6 +432,37 @@ export default function AjoutAnnonce() {
     <ScrollView style={styles.container}>
       <Text style={styles.titre}>Creer une annonce</Text>
 
+            <View style={styles.section}>
+        <View style={styles.mediaHeader}>
+          <Text style={styles.label}>Ajouter des (Images et Vidéos)</Text>
+          <Text style={styles.mediaCounter}>
+            {medias.length}/4 médias
+          </Text>
+        </View>
+        
+        {medias.length > 0 && (
+          <TouchableOpacity style={styles.clearAllButton} onPress={supprimerTousMedias}>
+            <Text style={styles.clearAllText}>Tout supprimer</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.mediaContainer}>
+          {renderEmptySlots()}
+        </View>
+
+        {medias.length === 0 && (
+          <Text style={styles.helperText}>
+            Cliquez sur les emplacements pour ajouter des images ou vidéos
+          </Text>
+        )}
+
+        {!canAddMoreMedias() && (
+          <Text style={styles.limitText}>
+            Maximum 4 médias atteint
+          </Text>
+        )}
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.label}>Titre*</Text>
         <TextInput
@@ -464,6 +482,16 @@ export default function AjoutAnnonce() {
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Numéro Whatssap</Text>
+        <TextInput
+        style={styles.input}
+        placeholder='entrer votre numero whatsap'
+        value={telephone}
+        onChangeText={setTelephone}
         />
       </View>
 
@@ -499,36 +527,7 @@ export default function AjoutAnnonce() {
         </View>
       )}
 
-      <View style={styles.section}>
-        <View style={styles.mediaHeader}>
-          <Text style={styles.label}>Médias (Images ou Vidéos)</Text>
-          <Text style={styles.mediaCounter}>
-            {medias.length}/4 médias
-          </Text>
-        </View>
-        
-        {medias.length > 0 && (
-          <TouchableOpacity style={styles.clearAllButton} onPress={supprimerTousMedias}>
-            <Text style={styles.clearAllText}>Tout supprimer</Text>
-          </TouchableOpacity>
-        )}
 
-        <View style={styles.mediaContainer}>
-          {renderEmptySlots()}
-        </View>
-
-        {medias.length === 0 && (
-          <Text style={styles.helperText}>
-            Cliquez sur les emplacements pour ajouter des images ou vidéos
-          </Text>
-        )}
-
-        {!canAddMoreMedias() && (
-          <Text style={styles.limitText}>
-            Maximum 4 médias atteint
-          </Text>
-        )}
-      </View>
 
       <View style={styles.section}>
         <Text style={styles.label}>Audience*</Text>
@@ -541,7 +540,7 @@ export default function AjoutAnnonce() {
             }}
             style={styles.picker}
           >
-            <Picker.Item label="1 à 2 personnes" value="3" />
+            <Picker.Item label="1 à 3 personnes" value="3" />
             <Picker.Item label="1 à 10 personnes" value="10" />
             <Picker.Item label="1 à 50 personnes" value="50" />
             <Picker.Item label="1 à 100 personnes" value="100" />
