@@ -3,8 +3,9 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIn
 import { GlobalContext } from '../config/GlobalUser';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const Menu = () => {
+const Menu = ({navigation}) => {
   const [liste, setListe] = useState([]);
   const [user] = useContext(GlobalContext);
   const [popularannonce, setPopularAnnonce] = useState([]);
@@ -13,8 +14,9 @@ const Menu = () => {
   const [error, setError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAnnonce, setSelectedAnnonce] = useState(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false); // Corrigé: false au lieu de null
-  const [selectedMediaIndex, setSelectedMediaIndex] = useState({});
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedMediaIndexTop, setSelectedMediaIndexTop] = useState({});
+  const [selectedMediaIndexPopular, setSelectedMediaIndexPopular] = useState({});
   const [fullScreenMedia, setFullScreenMedia] = useState(null);
   const [playingVideos, setPlayingVideos] = useState({});
   const videoRefs = useRef({});
@@ -34,7 +36,7 @@ const Menu = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`https://epencia.net/app/souangah/annonce/annonce-utilisateur.php?user_id=${user.user_id}`);
+      const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
       }
@@ -106,20 +108,25 @@ const Menu = () => {
     setSelectedAnnonce(null);
   };
 
-  // Fonction pour ouvrir le modal detail - CORRIGÉE
   const openDetail = (annonce) => {
     setSelectedAnnonce(annonce);
     setDetailModalVisible(true);
   };
 
-  // Fonction pour fermer le modal detail - CORRIGÉE (paramètre enlevé)
   const closeDetail = () => {
     setDetailModalVisible(false);
     setSelectedAnnonce(null);
   };
 
-  const handleMediaPress = (annonceId, index) => {
-    setSelectedMediaIndex(prev => ({
+  const handleMediaPressTop = (annonceId, index) => {
+    setSelectedMediaIndexTop(prev => ({
+      ...prev,
+      [annonceId]: index
+    }));
+  };
+
+  const handleMediaPressPopular = (annonceId, index) => {
+    setSelectedMediaIndexPopular(prev => ({
       ...prev,
       [annonceId]: index
     }));
@@ -228,9 +235,27 @@ const Menu = () => {
     return cleaned;
   };
 
+  // Fonction pour formater le prix
+  const formatPrice = (price) => {
+    if (!price) return '0 FCFA';
+    return `${price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA`;
+  };
+
+  // Fonction pour vérifier si une annonce a une promotion
+  const hasPromotion = (item) => {
+    return item.prix_promo && item.prix_promo !== item.prix_normal && item.prix_promo !== '0';
+  };
+
   const renderMedia = (item, isPopular = false) => {
+    const currentIndex = isPopular 
+      ? selectedMediaIndexPopular[item.id_annonce] || 0
+      : selectedMediaIndexTop[item.id_annonce] || 0;
+    
+    const handleMediaPress = isPopular 
+      ? handleMediaPressPopular 
+      : handleMediaPressTop;
+
     if (item.medias && item.medias.length > 0) {
-      const currentIndex = selectedMediaIndex[item.id_annonce] || 0;
       const currentMedia = item.medias[currentIndex];
       
       const cleanedBase64 = cleanBase64Data(currentMedia.fichier64);
@@ -278,6 +303,12 @@ const Menu = () => {
               />
             )}
 
+            {/* Overlay gradient */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)']}
+              style={styles.imageGradient}
+            />
+
             {isVideo && (
               <View style={styles.videoIndicator}>
                 <Ionicons name="play-circle" size={16} color="white" />
@@ -288,6 +319,13 @@ const Menu = () => {
             {isVideo && !isPlaying && (
               <View style={styles.videoOverlay}>
                 <Ionicons name="play" size={30} color="white" />
+              </View>
+            )}
+
+            {/* Promotion badge */}
+            {hasPromotion(item) && (
+              <View style={styles.promoBadge}>
+                <Text style={styles.promoBadgeText}>PROMO</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -342,6 +380,10 @@ const Menu = () => {
             style={isPopular ? styles.popularImage : styles.announcementImage}
             resizeMode="cover"
             onError={(e) => console.log('Single image failed to load')}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.3)']}
+            style={styles.imageGradient}
           />
         </TouchableOpacity>
       );
@@ -486,38 +528,87 @@ const Menu = () => {
     closeModal();
   };
 
+  // Composant pour afficher les prix correctement
+  const PriceDisplay = ({ item, isPopular = false }) => {
+    const hasPromo = hasPromotion(item);
+    const priceStyle = isPopular ? styles.popularPrice : styles.horizontalPrice;
+    const promoPriceStyle = isPopular ? styles.popularPromoPrice : styles.horizontalPromoPrice;
+
+    return (
+      <View style={styles.priceContainer}>
+        {hasPromo ? (
+          <>
+            <Text style={priceStyle}>{formatPrice(item.prix_promo)}</Text>
+            <Text style={promoPriceStyle}>{formatPrice(item.prix_normal)}</Text>
+          </>
+        ) : (
+          <Text style={priceStyle}>{formatPrice(item.prix_normal)}</Text>
+        )}
+      </View>
+    );
+  };
+
+  // Composant pour afficher les prix dans les détails
+  const DetailPriceDisplay = ({ item }) => {
+    const hasPromo = hasPromotion(item);
+
+    return (
+      <View style={styles.detailPriceContainer}>
+        {hasPromo ? (
+          <>
+            <Text style={styles.detailPrice}>{formatPrice(item.prix_promo)}</Text>
+            <Text style={styles.detailPromoPrice}>{formatPrice(item.prix_normal)}</Text>
+          </>
+        ) : (
+          <Text style={styles.detailPrice}>{formatPrice(item.prix_normal)}</Text>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Image
-            source={{ uri: imageUrls.header }}
-            style={styles.headerImage}
-            resizeMode="cover"
-          />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Votre véhicule à crédit</Text>
+        {/* Header Section améliorée */}
+        <LinearGradient
+          colors={['#1a1a1a', '#2d2d2d']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Votre véhicule à crédit</Text>
+              <Text style={styles.headerSubtitle}>Trouvez la voiture de vos rêves</Text>
+            </View>
             <Image
               source={{ uri: imageUrls.logo }}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Top Announcements Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top Annonces</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>Toutes ></Text>
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Ionicons name="flash" size={24} color="#FF6B00" />
+              <Text style={styles.sectionTitle}>Top annonces</Text>
+            </View>
+            <TouchableOpacity style={styles.viewAllButton}>
+              <Text style={styles.viewAll}>Voir plus</Text>
+              <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF6B00" />
+            <Text style={styles.loadingText}>Chargement des annonces...</Text>
+          </View>
         ) : error ? (
           <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={50} color="#FF6B00" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={getAnnonce}>
               <Text style={styles.retryText}>Réessayer</Text>
@@ -525,22 +616,44 @@ const Menu = () => {
           </View>
         ) : !liste || liste.length === 0 ? (
           <View style={styles.emptyContainer}>
+            <Ionicons name="car-outline" size={60} color="#ccc" />
             <Text style={styles.emptyText}>Aucune annonce disponible</Text>
+            <Text style={styles.emptySubtext}>Revenez plus tard pour découvrir de nouvelles annonces</Text>
           </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.announcementScroll}>
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.horizontalScrollContent}
+          >
             {liste.map((item, index) => (
-              <View key={item.id_annonce || index} style={styles.announcement}>
+              <View key={item.id_annonce || index} style={styles.horizontalAnnouncement}>
                 {renderMedia(item, false)}
                 
-                <Text style={styles.price}>{item.prix_normal} FCFA</Text>
-                {item.prix_promo && item.prix_promo !== item.prix_normal && (
-                  <Text style={styles.promoPrice}>{item.prix_promo} FCFA</Text>
-                )}
-                <Text style={styles.carName} numberOfLines={2}>{item.description}</Text>
-                <TouchableOpacity style={styles.contactButton} onPress={() => openModal(item)}>
-                  <Text style={styles.contactText}>CONTACTER</Text>
-                </TouchableOpacity>
+                <View style={styles.horizontalContent}>
+                  <Text style={styles.horizontalTitle} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                  
+                  <PriceDisplay item={item} isPopular={false} />
+                  
+                  <View style={styles.locationContainer}>
+                    <Ionicons name="location-outline" size={14} color="#666" />
+                    <Text style={styles.horizontalLocation}>{item.ville}</Text>
+                  </View>
+                  
+                  <View style={styles.horizontalButtonContainer}>
+                    <TouchableOpacity style={styles.detailsButton} onPress={() => openDetail(item)}>
+                      <Ionicons name="eye-outline" size={14} color="white" />
+                      <Text style={styles.detailsText}>Détails</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.contactButtonSmall} onPress={() => openModal(item)}>
+                      <Ionicons name="chatbubble-outline" size={14} color="white" />
+                      <Text style={styles.contactTextSmall}>Contacter</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -548,16 +661,26 @@ const Menu = () => {
 
         {/* Section Annonces Populaires */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Annonces populaires</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>Voir plus ></Text>
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Ionicons name="trending-up" size={24} color="#4CAF50" />
+              <Text style={styles.sectionTitle}>Annonces populaires</Text>
+            </View>
+            <TouchableOpacity style={styles.viewAllButton}>
+              <Text style={styles.viewAll}>Voir plus</Text>
+              <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {loadingPopular ? (
-          <ActivityIndicator size="large" color="#FF0000" style={styles.loading} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF6B00" />
+            <Text style={styles.loadingText}>Chargement des annonces populaires...</Text>
+          </View>
         ) : !popularannonce || popularannonce.length === 0 ? (
           <View style={styles.emptyContainer}>
+            <Ionicons name="car-outline" size={60} color="#ccc" />
             <Text style={styles.emptyText}>Aucune annonce populaire disponible</Text>
           </View>
         ) : (
@@ -572,16 +695,21 @@ const Menu = () => {
                       <Text style={styles.popularTitle} numberOfLines={2}>
                         {item.description}
                       </Text>
-                      <Text style={styles.popularPrice}>{item.prix_normal} FCFA</Text>
-                      {item.prix_promo && item.prix_promo !== item.prix_normal && (
-                        <Text style={styles.popularPromoPrice}>{item.prix_promo} FCFA</Text>
-                      )}
-                      <Text style={styles.popularLocation}>{item.ville}</Text>
+                      
+                      <PriceDisplay item={item} isPopular={true} />
+                      
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={12} color="#666" />
+                        <Text style={styles.popularLocation}>{item.ville}</Text>
+                      </View>
+                      
                       <View style={styles.buttonContainer}>
                         <TouchableOpacity style={styles.detailsButton} onPress={() => openDetail(item)}>
-                          <Text style={styles.detailsText}>Voir détails</Text>
+                          <Ionicons name="eye-outline" size={12} color="white" />
+                          <Text style={styles.detailsText}>Détails</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.contactButtonSmall} onPress={() => openModal(item)}>
+                          <Ionicons name="chatbubble-outline" size={12} color="white" />
                           <Text style={styles.contactTextSmall}>Contacter</Text>
                         </TouchableOpacity>
                       </View>
@@ -595,7 +723,7 @@ const Menu = () => {
         )}
       </ScrollView>
 
-      {/* Modal for Contact Options */}
+      {/* Modal for Contact Options amélioré */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -604,21 +732,54 @@ const Menu = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Contacter le vendeur</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Contacter le vendeur</Text>
+              <TouchableOpacity onPress={closeModal} style={styles.closeIcon}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.profileSection}>
+              <View style={styles.profileAvatar}>
+                <Ionicons name="person-circle" size={70} color="#007AFF"/>
+              </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.userName}>{user?.nom_prenom || 'Utilisateur'}</Text>
+                <View style={styles.locationContainer}>
+                  <Ionicons name="location-outline" size={14} color="#666" />
+                  <Text style={styles.userCity}>{user?.ville || 'Ville non précisée'}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.profileButton}
+                  onPress={() => {
+                    closeModal();
+                    navigation.navigate('ProfilUtilisateur');
+                  }}
+                >
+                  <Text style={styles.profileButtonText}>Voir le profil</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+                        
+            <View style={styles.separator} />
+            
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalButton, styles.whatsappButton]} onPress={handleWhatsApp}>
                 <Ionicons name='logo-whatsapp' size={24} color="white" />
                 <Text style={styles.modalButtonText}>WhatsApp</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity style={[styles.modalButton, styles.callButton]} onPress={handleCall}>
                 <Ionicons name="call-outline" size={24} color="white" />
                 <Text style={styles.modalButtonText}>Appeler</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity style={[styles.modalButton, styles.messageButton]} onPress={handleMessage}>
                 <Ionicons name="chatbubble-outline" size={24} color="white" />
                 <Text style={styles.modalButtonText}>Message</Text>
               </TouchableOpacity>
             </View>
+            
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
               <Text style={styles.closeButtonText}>Fermer</Text>
             </TouchableOpacity>
@@ -626,30 +787,42 @@ const Menu = () => {
         </View>
       </Modal>
 
-      {/* Modal detail - CORRIGÉ */}
+      {/* Modal detail amélioré */}
       <Modal
         animationType="slide"
-        transparent={true} // Corrigé: true au lieu de "true"
+        transparent={true}
         visible={detailModalVisible}
         onRequestClose={closeDetail}
       >
         <View style={styles.modalContainer}>
           <View style={styles.detailsModalContent}>
-            <TouchableOpacity>
-              <Text>Profil</Text>
-            </TouchableOpacity>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Détails de l'annonce</Text>
+              <TouchableOpacity onPress={closeDetail} style={styles.closeIcon}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
             {selectedAnnonce && (
-              // Contenu détail annonce - CORRIGÉ (commentaire fermé correctement)
-              <View style={styles.detailContent}>
-                <Text style={styles.detailTitle}>{selectedAnnonce.description}</Text>
-                <Text style={styles.detailPrice}>{selectedAnnonce.prix_normal} FCFA</Text>
-                <Text style={styles.detailPrice}>{selectedAnnonce.ville}</Text>
-                {/* Ajoutez plus de détails ici selon vos besoins */}
-              </View>
+              <ScrollView style={styles.detailScroll}>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailTitle}>{selectedAnnonce.description}</Text>
+                  
+                  <DetailPriceDisplay item={selectedAnnonce} />
+                  
+                  <View style={styles.detailInfo}>
+                    <View style={styles.infoItem}>
+                      <Ionicons name="location-outline" size={18} color="#666" />
+                      <Text style={styles.infoText}>{selectedAnnonce.ville}</Text>
+                    </View>
+                  </View>
+                </View>
+              </ScrollView>
             )}
-            <TouchableOpacity style={styles.closeButton} onPress={closeDetail}>
-              <Text style={styles.closeButtonText}>Fermer</Text>
+            
+            <TouchableOpacity style={styles.contactMainButton} onPress={() => { closeDetail(); openModal(selectedAnnonce); }}>
+              <Ionicons name="chatbubble-ellipses" size={20} color="white" />
+              <Text style={styles.contactMainButtonText}>Contacter le vendeur</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -666,107 +839,207 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   scrollView: {
     flex: 1,
   },
-  loading: {
+  // Header amélioré
+  header: {
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  // Sections améliorées
+  section: {
+    paddingHorizontal: 15,
     marginVertical: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginLeft: 8,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  viewAll: {
+    color: '#007AFF',
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  // Loading et erreurs améliorés
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+    marginVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 16,
   },
   errorContainer: {
     alignItems: 'center',
-    padding: 20,
-    marginVertical: 10,
+    padding: 40,
+    marginVertical: 20,
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   errorText: {
     color: '#FF0000',
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 10,
+    marginVertical: 10,
   },
   retryButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 10,
   },
   retryText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 20,
-    marginVertical: 10,
-  },
-  emptyText: {
-    color: '#666',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#1a1a1a',
-    marginBottom: 15,
-  },
-  headerImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  headerText: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  logo: {
-    width: 150,
-    height: 120,
-  },
-  section: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    marginVertical: 10,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  viewAll: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  announcementScroll: {
-    paddingHorizontal: 10,
-    marginBottom: 10,
-  },
-  announcement: {
-    alignItems: 'center',
-    width: 160,
+    padding: 40,
+    marginVertical: 20,
     backgroundColor: '#fff',
-    marginHorizontal: 5,
-    padding: 12,
-    borderRadius: 12,
+    marginHorizontal: 15,
+    borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
+  emptyText: {
+    color: '#666',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  // Cartes horizontales améliorées
+  horizontalScroll: {
+    marginBottom: 10,
+  },
+  horizontalScrollContent: {
+    paddingHorizontal: 10,
+  },
+  horizontalAnnouncement: {
+    width: 200,
+    backgroundColor: '#fff',
+    marginHorizontal: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
+    overflow: 'hidden',
+    marginBottom: 15,
+  },
+  horizontalContent: {
+    padding: 15,
+  },
+  horizontalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+    flexWrap: 'wrap',
+  },
+  horizontalPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginRight: 8,
+  },
+  horizontalPromoPrice: {
+    fontSize: 14,
+    color: '#666',
+    textDecorationLine: 'line-through',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  horizontalLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 4,
+  },
+  horizontalButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  // Styles médias améliorés
   mediaContainer: {
     position: 'relative',
-    marginBottom: 8,
   },
   popularMediaContainer: {
     position: 'relative',
@@ -775,18 +1048,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   announcementImage: {
-    width: 120,
-    height: 80,
-    borderRadius: 6,
+    width: '100%',
+    height: 180,
   },
   popularImage: {
     width: '100%',
-    height: 120,
+    height: 140,
+  },
+  imageGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 60,
   },
   videoIndicator: {
     position: 'absolute',
-    top: 5,
-    left: 5,
+    top: 10,
+    left: 10,
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -808,11 +1087,11 @@ const styles = StyleSheet.create({
   },
   mediaIndicator: {
     position: 'absolute',
-    top: 5,
-    right: 5,
+    top: 10,
+    right: 10,
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 10,
   },
   mediaIndicatorText: {
@@ -824,26 +1103,40 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     backgroundColor: 'rgba(0,0,0,0.5)',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 35,
+    height: 35,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -15,
+    marginTop: -18,
   },
   prevButton: {
-    left: 5,
+    left: 10,
   },
   nextButton: {
-    right: 5,
+    right: 10,
+  },
+  promoBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#FF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  promoBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   noMediaContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#e9ecef',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
+    borderColor: '#dee2e6',
+    borderRadius: 15,
   },
   noMediaTextSmall: {
     fontSize: 10,
@@ -851,6 +1144,291 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
+  // Grille populaire améliorée
+  popularGrid: {
+    paddingHorizontal: 10,
+    marginBottom: 60,
+  },
+  popularRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  popularAnnouncement: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  emptySpace: {
+    width: '48%',
+  },
+  popularContent: {
+    padding: 12,
+  },
+  popularTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  popularPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginBottom: 2,
+  },
+  popularPromoPrice: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+    textDecorationLine: 'line-through',
+  },
+  popularLocation: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  // Boutons améliorés
+  detailsButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailsText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
+  },
+  contactButtonSmall: {
+    backgroundColor: '#21a403',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  contactTextSmall: {
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  // Modals améliorés
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 0,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeIcon: {
+    padding: 4,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  profileAvatar: {
+    marginRight: 15,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userCity: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 4,
+  },
+  profileButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  profileButtonText: {
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    backgroundColor: '#007AFF',
+    borderRadius: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 20,
+    gap: 10,
+  },
+  modalButton: {
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 15,
+    flex: 1,
+    minWidth: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginTop: 8,
+    fontSize: 12,
+  },
+  closeButton: {
+    backgroundColor: '#6c757d',
+    paddingVertical: 15,
+    margin: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  whatsappButton: {
+    backgroundColor: '#25D366',
+  },
+  callButton: {
+    backgroundColor: '#007AFF',
+  },
+  messageButton: {
+    backgroundColor: '#FF9500',
+  },
+  // Modal détails amélioré
+  detailsModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 0,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  detailScroll: {
+    flex: 1,
+  },
+  detailContent: {
+    padding: 20,
+  },
+  detailTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    lineHeight: 28,
+  },
+  detailPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  detailPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginRight: 12,
+  },
+  detailPromoPrice: {
+    fontSize: 18,
+    color: '#666',
+    textDecorationLine: 'line-through',
+  },
+  detailInfo: {
+    marginBottom: 20,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 8,
+  },
+  contactMainButton: {
+    backgroundColor: '#21a403',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    margin: 20,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  contactMainButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: 20,
+  },
+  // Styles plein écran existants
   fullScreenContainer: {
     flex: 1,
     backgroundColor: 'black',
@@ -923,199 +1501,6 @@ const styles = StyleSheet.create({
   fullScreenVideoIndicatorText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: 'bold',
-  },
-  price: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF6B00',
-    marginBottom: 2,
-    marginTop: 4,
-  },
-  promoPrice: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#FF0000',
-    marginBottom: 4,
-    textDecorationLine: 'line-through',
-  },
-  carName: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-    height: 40,
-  },
-  contactButton: {
-    backgroundColor: '#21a403ff',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    width: '100%',
-  },
-  contactText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  contactButtonSmall: {
-    backgroundColor: '#21a403ff',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  contactTextSmall: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  popularGrid: {
-    paddingHorizontal: 10,
-    marginBottom: 60,
-  },
-  popularRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  popularAnnouncement: {
-    width: '49%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  emptySpace: {
-    width: '48%',
-  },
-  popularContent: {
-    padding: 10,
-  },
-  popularTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-    height: 40,
-  },
-  popularPrice: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#FF6B00',
-    marginBottom: 2,
-  },
-  popularPromoPrice: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FF0000',
-    marginBottom: 4,
-    textDecorationLine: 'line-through',
-  },
-  popularLocation: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailsButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  detailsText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 11,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
-  detailsModalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    width: '90%',
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
-  },
-  modalButton: {
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 8,
-    minWidth: 80,
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginTop: 5,
-    fontSize: 12,
-  },
-  closeButton: {
-    backgroundColor: '#FF0000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  whatsappButton: {
-    backgroundColor: '#25D366',
-  },
-  callButton: {
-    backgroundColor: '#007AFF',
-  },
-  messageButton: {
-    backgroundColor: '#FF9500',
-  },
-  detailContent: {
-    marginTop: 20,
-  },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  detailPrice: {
-    fontSize: 16,
-    color: '#FF6B00',
     fontWeight: 'bold',
   },
 });

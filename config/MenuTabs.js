@@ -13,6 +13,7 @@ import AnnonceUtilisateur from '../screens/annonce-utilisateur';
 import Parametre from '../screens/parametre';
 import Menu from '../screens/menu';
 import NotificationsScreen from '../screens/notification-non-lu'; // Nouvel écran
+import AnnonceFavoris from '../screens/annonce-favoris';
 
 const Tab = createBottomTabNavigator();
 
@@ -98,7 +99,11 @@ export default function MenuTabs({ navigation }) {
     });
   }, [navigation, user, count]);
 
+  useEffect
+
   return (
+    <View style={{flex:1}}>
+     
     <Tab.Navigator initialRouteName='Menu'
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -116,8 +121,8 @@ export default function MenuTabs({ navigation }) {
             case 'ListeAnnonces':
               iconName = focused ? 'briefcase' : 'briefcase-outline';
               break;
-            case 'AjouterAnnonce':
-              iconName = 'add';
+            case 'AnnonceFavoris':
+              iconName = 'heart';
               break;
             case 'AnnonceUtilisateur':
               iconName = focused ? 'document-text' : 'document-text-outline';
@@ -132,15 +137,16 @@ export default function MenuTabs({ navigation }) {
           if (route.name === 'AjouterAnnonce') {
             return (
               <View style={styles.mainActionButton}>
-                <Ionicons name="add" size={30} color="#fff" />
+                <Ionicons name="heart" size={30} color="#fff" />
               </View>
             );
           }
 
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <Ionicons name={iconName} size={25} color={color} />;
         },
       })}
     >
+      
       <Tab.Screen
         name="Menu"
         component={Menu}
@@ -152,9 +158,9 @@ export default function MenuTabs({ navigation }) {
         options={{ tabBarLabel: 'Les Annonces' }}
       />
       <Tab.Screen
-        name="AjouterAnnonce"
-        component={AjouterAnnonce}
-        options={{ tabBarLabel: 'Ajouter' }}
+        name="AnnonceFavoris"
+        component={AnnonceFavoris}
+        options={{ tabBarLabel: 'Favoris' }}
       />
       <Tab.Screen
         name="AnnonceUtilisateur"
@@ -167,6 +173,14 @@ export default function MenuTabs({ navigation }) {
         options={{ tabBarLabel: 'Paramètre' }}
       />
     </Tab.Navigator>
+     <TouchableOpacity
+      style={styles.buttonpublier}
+      onPress={() => navigation.navigate('AjouterAnnonce')}
+      >
+        <Ionicons name='megaphone' size={20} color='white' style={{ transform: [{ rotate: '-45deg' }] }} />
+        <Text style={styles.textbutton}>Publier une annonce</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -239,4 +253,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  buttonpublier: {
+    flexDirection: 'row',
+    gap: 20,
+  position: 'absolute',
+  bottom: 100, // ⬅️ juste au-dessus de la barre
+  alignSelf: 'center',
+  alignItems: 'center',
+  backgroundColor: '#ed720dff',
+  borderRadius: 30,
+  paddingVertical: 12,
+  paddingHorizontal: 40,
+  elevation: 5,
+  shadowColor: '#000',
+  shadowOpacity: 0.2,
+  shadowRadius: 5,
+  shadowOffset: { width: 0, height: 2 },
+  zIndex: 10,
+},
+textbutton: {
+color: 'white',
+},
+
 });

@@ -19,6 +19,7 @@ import Plus from '../screens/autre-parametre';
 import Service from '../screens/service';
 import Notification from '../screens/notification-non-lu';
 import MenuTabs from './MenuTabs';
+import AnnonceFavoris from '../screens/annonce-favoris';
 
 
 
@@ -46,6 +47,7 @@ export default function Router() {
            <Stack.Screen name="Service" component={Service} />
            <Stack.Screen name="Notification" component={Notification} options={{headerShown: false}} /> 
            <Stack.Screen name="MenuTabs" component={MenuTabs} options={{headerShown: true}} />
+           <Stack.Screen name="AnnonceFavoris" component={AnnonceFavoris} />
       </Stack.Navigator>
     </NavigationContainer>
   );
