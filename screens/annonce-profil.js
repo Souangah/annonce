@@ -21,50 +21,69 @@ import { GlobalContext } from '../config/GlobalUser';
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 30) / 2;
 
-export default function ListeAnnonce({ navigation }) {
+export default function AnnoncesProfil({ route, navigation }) {
+  const { userId } = route.params;
   const [liste, setListe] = useState([]);
   const [filteredListe, setFilteredListe] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [rechercher, setRechercher] = useState('');
-  const [user] = useContext(GlobalContext);
 
   // Plein écran
   const [fullScreenData, setFullScreenData] = useState(null);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   useEffect(() => {
-    getAnnonce();
+    getAnnonces();
   }, []);
 
   useEffect(() => {
     const filtered = liste.filter(item =>
       (item.titre?.toLowerCase() || '').includes(rechercher.toLowerCase()) ||
-      (item.description?.toLowerCase() || '').includes(rechercher.toLowerCase()) ||
-      (item.prix_promo?.toLowerCase() || '').includes(rechercher.toLowerCase())
+      (item.description?.toLowerCase() || '').includes(rechercher.toLowerCase())
     );
     setFilteredListe(filtered);
   }, [rechercher, liste]);
 
-  const getAnnonce = async () => {
-    try {
-      setRefreshing(true);
-      const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
-      const result = await response.json();
-      if (Array.isArray(result)) {
-        setListe(result);
-        setFilteredListe(result);
-      } else {
-        setListe([]);
-        setFilteredListe([]);
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+   const getAnnonces = async () => {
+  try {
+    setRefreshing(true);
+    setLoading(true);
+
+    const url = `https://epencia.net/app/souangah/annonce/annonces-par-utilisateur.php?user_id=${userId}`;
+    console.log('Appel API vers :', url);
+
+    const response = await fetch(url);
+    const result = await response.json();
+
+    console.log('Résultat complet :', result);
+
+    // VERSION ULTRA SOLIDE – marche dans tous les cas
+    let annoncesArray = [];
+
+    if (result && result.status === 'success' && Array.isArray(result.annonces)) {
+      annoncesArray = result.annonces;
+    } else if (Array.isArray(result)) {
+      annoncesArray = result;
+    } else if (result && Array.isArray(result.annonces)) {
+      annoncesArray = result.annonces;
     }
-  };
+
+    console.log('Nombre d\'annonces détectées :', annoncesArray.length);
+
+    setListe(annoncesArray);
+    setFilteredListe(annoncesArray);
+
+  } catch (error) {
+    console.error('Erreur totale :', error);
+    alert('Erreur réseau : ' + error.message);
+    setListe([]);
+    setFilteredListe([]);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
 
   const formatPrice = price =>
     price ? `${Number(price).toLocaleString('fr-FR')} FCFA` : 'Prix non défini';
@@ -91,62 +110,58 @@ export default function ListeAnnonce({ navigation }) {
     setCurrentMediaIndex(newIndex);
   };
 
-// Remplace cette fonction dans ton code
-const renderGridMedia = (item) => {
-  const medias = item.medias && item.medias.length > 0 ? item.medias : null;
-  const totalMedias = medias ? medias.length : 1;
-  const media = medias
-    ? medias[0]
-    : { type_media: 'image', type_fichier: item.type, fichier64: item.photo64 };
+  const renderGridMedia = (item) => {
+    const medias = item.medias && item.medias.length > 0 ? item.medias : null;
+    const totalMedias = medias ? medias.length : 1;
+    const media = medias
+      ? medias[0]
+      : { type_media: 'image', type_fichier: item.type, fichier64: item.photo64 };
 
-  const isVideo = media.type_media === 'video';
-  const uri = `data:${media.type_fichier || 'image/jpeg'};base64,${cleanBase64(media.fichier64)}`;
+    const isVideo = media.type_media === 'video';
+    const uri = `data:${media.type_fichier || 'image/jpeg'};base64,${cleanBase64(media.fichier64)}`;
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.95}
-      onPress={() => openFullScreen(item, 0)}
-      style={styles.mediaWrapper}
-    >
-      {isVideo ? (
-        <View style={styles.videoPlaceholder}>
-          <Ionicons name="play-circle" size={48} color="#fff" />
-          <Text style={styles.videoText}>VIDÉO</Text>
-        </View>
-      ) : (
-        <Image
-          source={{ uri }}
-          style={styles.gridImage}
-          resizeMode="cover"
-          progressiveRenderingEnabled
-          fadeDuration={200}
-        />
-      )}
+    return (
+      <TouchableOpacity
+        activeOpacity={0.95}
+        onPress={() => openFullScreen(item, 0)}
+        style={styles.mediaWrapper}
+      >
+        {isVideo ? (
+          <View style={styles.videoPlaceholder}>
+            <Ionicons name="play-circle" size={48} color="#fff" />
+            <Text style={styles.videoText}>VIDÉO</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri }}
+            style={styles.gridImage}
+            resizeMode="cover"
+            progressiveRenderingEnabled
+            fadeDuration={200}
+          />
+        )}
 
-      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={styles.gradient} />
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={styles.gradient} />
 
-      {hasPromotion(item) && (
-        <View style={styles.promoBadge}>
-          <Text style={styles.promoText}>PROMO</Text>
-        </View>
-      )}
+        {hasPromotion(item) && (
+          <View style={styles.promoBadge}>
+            <Text style={styles.promoText}>PROMO</Text>
+          </View>
+        )}
 
-      {/* Indicateur 1/4, 2/4, etc. */}
-      {totalMedias > 1 && (
-        <View style={styles.mediaCount}>
-          <Text style={styles.mediaCountText}>
-            1/{totalMedias}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
+        {totalMedias > 1 && (
+          <View style={styles.mediaCount}>
+            <Text style={styles.mediaCountText}>1/{totalMedias}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.gridCard}
-     onPress={() => navigation.navigate('DetailsAnnonce', { annonceId: item.id_annonce })}
+      onPress={() => navigation.navigate('DetailsAnnonce', { annonceId: item.id_annonce })}
     >
       {renderGridMedia(item)}
 
@@ -217,12 +232,19 @@ const renderGridMedia = (item) => {
 
   return (
     <View style={styles.container}>
+
+      {/* En-tête */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Annonces de cet utilisateur</Text>
+        <Text style={styles.headerSubtitle}>{liste.length} annonce(s) publiée(s)</Text>
+      </View>
+
       {/* Barre de recherche */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Rechercher des annonces..."
+          placeholder="Rechercher dans ses pour cette personne..."
           value={rechercher}
           onChangeText={setRechercher}
         />
@@ -239,19 +261,21 @@ const renderGridMedia = (item) => {
         keyExtractor={(_, i) => i.toString()}
         contentContainerStyle={styles.list}
         refreshing={refreshing}
-        onRefresh={getAnnonce}
+        onRefresh={getAnnonces}   
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="car-outline" size={80} color="#ccc" />
+            <Ionicons name="sad-outline" size={80} color="#ccc" />
             <Text style={styles.emptyText}>
-              {rechercher ? 'Aucune annonce trouvée' : 'Aucune annonce disponible'}
+              {rechercher
+                ? 'Aucune annonce trouvée'
+                : 'Cet utilisateur n\'a publié aucune annonce pour le moment'}
             </Text>
           </View>
         }
       />
 
-      {/* Plein écran */}
+      {/* Modal plein écran */}
       <Modal visible={!!fullScreenData} animationType="fade" statusBarTranslucent>
         <View style={styles.fullScreen}>
           <StatusBar hidden />
@@ -308,6 +332,20 @@ const renderGridMedia = (item) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
+
+  header: {
+    backgroundColor: '#fff',
+    padding: 18,
+    paddingTop: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  headerTitle: { fontSize: 19, fontWeight: 'bold', color: '#333' },
+  headerSubtitle: { fontSize: 14, color: '#666', marginTop: 4 },
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -321,8 +359,10 @@ const styles = StyleSheet.create({
   },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16, color: '#333' },
+
   list: { paddingHorizontal: 10, paddingBottom: 30 },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+
   gridCard: {
     width: CARD_WIDTH,
     backgroundColor: '#fff',
@@ -348,6 +388,7 @@ const styles = StyleSheet.create({
   promoText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
   mediaCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
   mediaCountText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+
   gridContent: { padding: 10 },
   gridTitle: { fontSize: 13.5, fontWeight: 'bold', color: '#333', marginBottom: 6 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
@@ -370,7 +411,7 @@ const styles = StyleSheet.create({
   counter: { position: 'absolute', top: 50, left: 20, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   counterText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' },
   loadingText: { marginTop: 15, fontSize: 16, color: '#666' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyText: { marginTop: 20, fontSize: 17, color: '#999', textAlign: 'center' },

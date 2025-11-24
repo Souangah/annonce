@@ -1,9 +1,10 @@
 import React, { useLayoutEffect, useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GlobalContext } from '../config/GlobalUser';
 import Notification from '../screens/notification-non-lu';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Importez vos screens ici
 import Accueil from '../screens/accueil';
@@ -76,12 +77,31 @@ export default function MenuTabs({ navigation }) {
             )}
           </TouchableOpacity>
           
-          <View style={styles.soldeContainer}>
+         
+          
+         
+        </View>
+      ),
+    });
+  }, [navigation, user, count]);
+
+  useEffect
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{flex:1}}>
+      <View style={styles.header}>
+        <Image 
+        source={require('../assets/images/logo.png')}
+        style={styles.logo} 
+        />
+         <View style={styles.principal}>
+         <View style={styles.soldeContainer}>
             <Text style={styles.labelsolde}>Solde</Text>
             <Text style={styles.footersolde}>{user?.solde || 0} FCFA</Text>
           </View>
-          
-          <TouchableOpacity
+         
+           <TouchableOpacity
             onPress={() => navigation.navigate('MenuSolde')}
             style={styles.iconButton}
           >
@@ -94,15 +114,9 @@ export default function MenuTabs({ navigation }) {
           >
             <Ionicons name="log-out-outline" size={22} color="#000000" />
           </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, user, count]);
-
-  useEffect
-
-  return (
-    <View style={{flex:1}}>
+          </View>
+       
+      </View>
      
     <Tab.Navigator initialRouteName='Menu'
       screenOptions={({ route }) => ({
@@ -181,6 +195,7 @@ export default function MenuTabs({ navigation }) {
         <Text style={styles.textbutton}>Publier une annonce</Text>
       </TouchableOpacity>
     </View>
+    </SafeAreaView>
   );
 }
 
@@ -228,7 +243,7 @@ const styles = StyleSheet.create({
   },
   tabBarStyle: {
     backgroundColor: '#fff',
-    height: 95,
+    height: 70,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     paddingBottom: 2,
@@ -257,7 +272,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
   position: 'absolute',
-  bottom: 100, // ⬅️ juste au-dessus de la barre
+  bottom: 75, // ⬅️ juste au-dessus de la barre
   alignSelf: 'center',
   alignItems: 'center',
   backgroundColor: '#ed720dff',
@@ -274,5 +289,21 @@ const styles = StyleSheet.create({
 textbutton: {
 color: 'white',
 },
+header: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+principal : {
+  flexDirection: 'row',
+  marginHorizontal: 15,
+  gap: 10,
+},
+logo: {
+  width: 58,
+  height: 58, 
+  borderRadius: 5,
+  marginHorizontal: 10,
+}
 
 });

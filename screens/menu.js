@@ -749,15 +749,23 @@ const Menu = ({navigation}) => {
                   <Ionicons name="location-outline" size={14} color="#666" />
                   <Text style={styles.userCity}>{user?.ville || 'Ville non précisée'}</Text>
                 </View>
-                <TouchableOpacity 
-                  style={styles.profileButton}
-                  onPress={() => {
-                    closeModal();
-                    navigation.navigate('ProfilUtilisateur');
-                  }}
-                >
-                  <Text style={styles.profileButtonText}>Voir le profil</Text>
-                </TouchableOpacity>
+              <TouchableOpacity 
+                    style={styles.profileButton}
+                    onPress={() => {
+                      closeModal();
+                      
+                      // user_id est maintenant présent dans selectedAnnonce
+                      const vendeurId = selectedAnnonce?.user_id;
+
+                      if (vendeurId) {
+                        navigation.navigate('AnnoncesProfil', { userId: vendeurId });
+                      } else {
+                        Alert.alert('Erreur', 'ID du vendeur temporairement indisponible.');
+                      }
+                    }}
+                  >
+                    <Text style={styles.profileButtonText}>Voir toutes ses annonces</Text>
+            </TouchableOpacity>
               </View>
             </View>
                         
@@ -839,7 +847,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#e2e0e0ff',
   },
   scrollView: {
     flex: 1,
