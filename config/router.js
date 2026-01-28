@@ -21,6 +21,8 @@ import Notification from '../screens/notification-non-lu';
 import MenuTabs from './MenuTabs';
 import AnnonceFavoris from '../screens/annonce-favoris';
 import AnnoncesProfil from '../screens/annonce-profil';
+import AnnonceDetail from '../screens/AnnonceDetail';
+import ModifierProfil from '../screens/modifier-profil';
 
 
 
@@ -32,7 +34,7 @@ export default function Router() {
     <NavigationContainer ref={navigationRef}>
        <NotificationPush />
       <Stack.Navigator
-       initialRouteName="Connexion"
+       initialRouteName="MenuTabs"
        screenOptions={{headerShown: false}}
        >
         <Stack.Screen name="Connexion" component={Connexion} />
@@ -53,6 +55,8 @@ export default function Router() {
            <Stack.Screen name="MenuTabs" component={MenuTabs} />
            <Stack.Screen name="AnnonceFavoris" component={AnnonceFavoris} />
            <Stack.Screen name="AnnoncesProfil" component={AnnoncesProfil} />
+           <Stack.Screen name="AnnonceDetail" component={AnnonceDetail} />
+           <Stack.Screen name="Modifier le profil" component={ModifierProfil} />
       </Stack.Navigator>
     </NavigationContainer>
   );

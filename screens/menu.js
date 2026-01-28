@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert, Dimensions, StatusBar } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert, Dimensions, StatusBar, TextInput, FlatList } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,32 +7,54 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const Menu = ({navigation}) => {
   const [liste, setListe] = useState([]);
+  const [filteredListe, setFilteredListe] = useState([]);
   const [user] = useContext(GlobalContext);
-  const [popularannonce, setPopularAnnonce] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingPopular, setLoadingPopular] = useState(true);
   const [error, setError] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedAnnonce, setSelectedAnnonce] = useState(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedMediaIndexTop, setSelectedMediaIndexTop] = useState({});
-  const [selectedMediaIndexPopular, setSelectedMediaIndexPopular] = useState({});
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState({});
   const [fullScreenMedia, setFullScreenMedia] = useState(null);
   const [playingVideos, setPlayingVideos] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
   const videoRefs = useRef({});
+  const [typeannonce, setTypeAnnonce] = useState('');
+  const [selectedType, setSelectedType] = useState(null);
 
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  // liste des type annonces
+
+  useEffect(() => {
+    getTypeAnnonce();
+  },[]);
+
+  const getTypeAnnonce = async () => {
+    const response = await fetch('https://epencia.net/app/souangah/annonce/type-annonce.php');
+    const result = await response.json();
+    setTypeAnnonce(result);
+    
+  }
 
   useEffect(() => {
     getAnnonce();
   }, []);
 
-  const getAnnonce = async () => {
-    if (!user?.user_id) {
-      console.warn('user_id non disponible');
-      setLoading(false);
-      return;
+  // Filtrer les annonces quand la recherche change
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredListe(liste);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = liste.filter(item => 
+        (item.titre && item.titre.toLowerCase().includes(query)) ||
+        (item.description && item.description.toLowerCase().includes(query)) ||
+        (item.utilisateur?.ville && item.utilisateur.ville.toLowerCase().includes(query))
+      );
+      setFilteredListe(filtered);
     }
+  }, [searchQuery, liste]);
+
+  const getAnnonce = async () => {
+   
     try {
       setLoading(true);
       setError(null);
@@ -41,46 +63,27 @@ const Menu = ({navigation}) => {
         throw new Error(`Erreur HTTP: ${response.status}`);
       }
       const result = await response.json();
-      if (result.status === 'success' && Array.isArray(result.annonces)) {
-        setListe(result.annonces);
-      } else if (Array.isArray(result)) {
+      
+      // L'API retourne directement un tableau d'annonces
+      if (Array.isArray(result)) {
         setListe(result);
+        setFilteredListe(result);
+        console.log('Annonces chargées:', result.length);
       } else {
         console.warn('Structure de données inattendue:', result);
         setListe([]);
+        setFilteredListe([]);
         setError('Format de données non reconnu');
       }
     } catch (error) {
       console.error('Erreur Top Annonces:', error);
       setError('Erreur de chargement des annonces');
       setListe([]);
+      setFilteredListe([]);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const fetchPopularAnnonces = async () => {
-      try {
-        setLoadingPopular(true);
-        const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
-        const data = await response.json();
-        console.log('Données populaires reçues:', data);
-        if (Array.isArray(data)) {
-          setPopularAnnonce(data);
-        } else {
-          console.warn('Les données populaires ne sont pas un tableau:', data);
-          setPopularAnnonce([]);
-        }
-      } catch (err) {
-        console.error('Erreur Annonces Populaires:', err);
-        setPopularAnnonce([]);
-      } finally {
-        setLoadingPopular(false);
-      }
-    };
-    fetchPopularAnnonces();
-  }, []);
 
   const chunkArray = (array, chunkSize) => {
     if (!Array.isArray(array)) return [];
@@ -91,42 +94,10 @@ const Menu = ({navigation}) => {
     return chunks;
   };
 
-  const popularChunks = chunkArray(popularannonce, 2);
+  const annonceChunks = chunkArray(filteredListe, 2);
 
-  const imageUrls = {
-    header: 'https://images.unsplash.com/photo-1549399542-7e7f0edb80d8?w=150&h=150&fit=crop',
-    logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=50&h=50&fit=crop',
-  };
-
-  const openModal = (annonce) => {
-    setSelectedAnnonce(annonce);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedAnnonce(null);
-  };
-
-  const openDetail = (annonce) => {
-    setSelectedAnnonce(annonce);
-    setDetailModalVisible(true);
-  };
-
-  const closeDetail = () => {
-    setDetailModalVisible(false);
-    setSelectedAnnonce(null);
-  };
-
-  const handleMediaPressTop = (annonceId, index) => {
-    setSelectedMediaIndexTop(prev => ({
-      ...prev,
-      [annonceId]: index
-    }));
-  };
-
-  const handleMediaPressPopular = (annonceId, index) => {
-    setSelectedMediaIndexPopular(prev => ({
+  const handleMediaPress = (annonceId, index) => {
+    setSelectedMediaIndex(prev => ({
       ...prev,
       [annonceId]: index
     }));
@@ -227,33 +198,30 @@ const Menu = ({navigation}) => {
   const cleanBase64Data = (base64String) => {
     if (!base64String) return null;
     
-    const cleaned = base64String
-      .replace(/^data:image\/[a-zA-Z]+;base64,/, '')
-      .replace(/^data:video\/[a-zA-Z]+;base64,/, '')
-      .trim();
+    // Vérifier si le base64 est déjà préfixé
+    if (base64String.startsWith('data:')) {
+      return base64String;
+    }
     
-    return cleaned;
+    // Si ce n'est pas préfixé, c'est probablement déjà un base64 pur
+    return base64String.trim();
   };
 
   // Fonction pour formater le prix
   const formatPrice = (price) => {
-    if (!price) return '0 FCFA';
-    return `${price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA`;
+    if (!price || price === '0') return 'Prix à discuter';
+    const numericPrice = parseInt(price);
+    if (isNaN(numericPrice)) return 'Prix à discuter';
+    return `${numericPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA`;
   };
 
   // Fonction pour vérifier si une annonce a une promotion
   const hasPromotion = (item) => {
-    return item.prix_promo && item.prix_promo !== item.prix_normal && item.prix_promo !== '0';
+    return item.prix_promo && item.prix_promo !== item.prix_normal && item.prix_promo !== '0' && item.prix_promo !== '0';
   };
 
-  const renderMedia = (item, isPopular = false) => {
-    const currentIndex = isPopular 
-      ? selectedMediaIndexPopular[item.id_annonce] || 0
-      : selectedMediaIndexTop[item.id_annonce] || 0;
-    
-    const handleMediaPress = isPopular 
-      ? handleMediaPressPopular 
-      : handleMediaPressTop;
+  const renderMedia = (item) => {
+    const currentIndex = selectedMediaIndex[item.id_annonce] || 0;
 
     if (item.medias && item.medias.length > 0) {
       const currentMedia = item.medias[currentIndex];
@@ -261,37 +229,53 @@ const Menu = ({navigation}) => {
       const cleanedBase64 = cleanBase64Data(currentMedia.fichier64);
       
       if (!cleanedBase64) {
-        return renderNoMedia(isPopular, 'Données base64 invalides');
+        return renderNoMedia('Données base64 invalides');
       }
 
-      const mediaUri = `data:${currentMedia.type_fichier || 'image/jpeg'};base64,${cleanedBase64}`;
+      let mediaUri = cleanedBase64;
+      // Si le base64 n'a pas de préfixe data:, l'ajouter
+      if (!cleanedBase64.startsWith('data:')) {
+        const mimeType = currentMedia.type_fichier || 
+                        (currentMedia.type_media === 'video' ? 'video/mp4' : 'image/jpeg');
+        mediaUri = `data:${mimeType};base64,${cleanedBase64}`;
+      }
+
       const isVideo = currentMedia.type_media === 'video';
       const isPlaying = playingVideos[item.id_annonce];
 
       return (
-        <View style={isPopular ? styles.popularMediaContainer : styles.mediaContainer}>
+        <View style={styles.mediaContainer}>
           <TouchableOpacity 
             style={styles.mediaTouchable}
-            onPress={() => openFullScreen(item, currentIndex)}
+            onPress={(e) => {
+              e.stopPropagation(); // Empêche la propagation au parent
+              openFullScreen(item, currentIndex);
+            }}
             activeOpacity={0.9}
           >
             {!isVideo ? (
               <Image 
                 source={{ uri: mediaUri }}
-                style={isPopular ? styles.popularImage : styles.announcementImage}
+                style={styles.announcementImage}
                 resizeMode="cover"
-                onError={(e) => console.log('Media image failed to load:', e.nativeEvent.error)}
+                onError={(e) => {
+                  console.log('Media image failed to load:', e.nativeEvent.error);
+                  console.log('URI essayée:', mediaUri.substring(0, 100) + '...');
+                }}
               />
             ) : (
               <Video
                 ref={ref => videoRefs.current[item.id_annonce] = ref}
                 source={{ uri: mediaUri }}
-                style={isPopular ? styles.popularImage : styles.announcementImage}
+                style={styles.announcementImage}
                 useNativeControls
                 resizeMode="cover"
                 shouldPlay={false}
                 isLooping={false}
-                onError={(e) => console.log('Video failed to load:', e)}
+                onError={(e) => {
+                  console.log('Video failed to load:', e);
+                  console.log('URI essayée:', mediaUri.substring(0, 100) + '...');
+                }}
                 onLoad={() => console.log('Video loaded successfully')}
                 onPlaybackStatusUpdate={(status) => {
                   if (status.isPlaying) {
@@ -311,14 +295,14 @@ const Menu = ({navigation}) => {
 
             {isVideo && (
               <View style={styles.videoIndicator}>
-                <Ionicons name="play-circle" size={16} color="white" />
+                <Ionicons name="play-circle" size={12} color="white" />
                 <Text style={styles.videoIndicatorText}>VIDÉO</Text>
               </View>
             )}
 
             {isVideo && !isPlaying && (
               <View style={styles.videoOverlay}>
-                <Ionicons name="play" size={30} color="white" />
+                <Ionicons name="play" size={20} color="white" />
               </View>
             )}
 
@@ -343,17 +327,23 @@ const Menu = ({navigation}) => {
               {currentIndex > 0 && (
                 <TouchableOpacity 
                   style={[styles.navButton, styles.prevButton]}
-                  onPress={() => handleMediaPress(item.id_annonce, currentIndex - 1)}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Empêche la propagation au parent
+                    handleMediaPress(item.id_annonce, currentIndex - 1);
+                  }}
                 >
-                  <Ionicons name="chevron-back" size={20} color="white" />
+                  <Ionicons name="chevron-back" size={16} color="white" />
                 </TouchableOpacity>
               )}
               {currentIndex < item.medias.length - 1 && (
                 <TouchableOpacity 
                   style={[styles.navButton, styles.nextButton]}
-                  onPress={() => handleMediaPress(item.id_annonce, currentIndex + 1)}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Empêche la propagation au parent
+                    handleMediaPress(item.id_annonce, currentIndex + 1);
+                  }}
                 >
-                  <Ionicons name="chevron-forward" size={20} color="white" />
+                  <Ionicons name="chevron-forward" size={16} color="white" />
                 </TouchableOpacity>
               )}
             </>
@@ -365,21 +355,32 @@ const Menu = ({navigation}) => {
       const cleanedBase64 = cleanBase64Data(item.photo64);
       
       if (!cleanedBase64) {
-        return renderNoMedia(isPopular, 'Données base64 invalides');
+        return renderNoMedia('Données base64 invalides');
       }
 
-      const imageUri = `data:${item.type || 'image/jpeg'};base64,${cleanedBase64}`;
+      let imageUri = cleanedBase64;
+      // Si le base64 n'a pas de préfixe data:, l'ajouter
+      if (!cleanedBase64.startsWith('data:')) {
+        const mimeType = item.type || 'image/jpeg';
+        imageUri = `data:${mimeType};base64,${cleanedBase64}`;
+      }
 
       return (
         <TouchableOpacity 
-          onPress={() => openFullScreen(item)}
+          onPress={(e) => {
+            e.stopPropagation(); // Empêche la propagation au parent
+            openFullScreen(item);
+          }}
           activeOpacity={0.9}
         >
           <Image
             source={{ uri: imageUri }}
-            style={isPopular ? styles.popularImage : styles.announcementImage}
+            style={styles.announcementImage}
             resizeMode="cover"
-            onError={(e) => console.log('Single image failed to load')}
+            onError={(e) => {
+              console.log('Single image failed to load:', e.nativeEvent.error);
+              console.log('URI essayée:', imageUri.substring(0, 100) + '...');
+            }}
           />
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.3)']}
@@ -389,7 +390,7 @@ const Menu = ({navigation}) => {
       );
     }
     else {
-      return renderNoMedia(isPopular, 'Aucune image');
+      return renderNoMedia('Aucune image');
     }
   };
 
@@ -403,7 +404,13 @@ const Menu = ({navigation}) => {
     const cleanedBase64 = cleanBase64Data(currentMedia.fichier64);
     if (!cleanedBase64) return null;
 
-    const mediaUri = `data:${currentMedia.type_fichier || 'image/jpeg'};base64,${cleanedBase64}`;
+    let mediaUri = cleanedBase64;
+    if (!cleanedBase64.startsWith('data:')) {
+      const mimeType = currentMedia.type_fichier || 
+                      (currentMedia.type_media === 'video' ? 'video/mp4' : 'image/jpeg');
+      mediaUri = `data:${mimeType};base64,${cleanedBase64}`;
+    }
+    
     const isVideo = currentMedia.type_media === 'video';
 
     return (
@@ -477,244 +484,187 @@ const Menu = ({navigation}) => {
     );
   };
 
-  const renderNoMedia = (isPopular, message) => {
+  const renderNoMedia = (message) => {
     return (
-      <View style={[isPopular ? styles.popularImage : styles.announcementImage, styles.noMediaContainer]}>
-        <Ionicons name="image-outline" size={30} color="#999" />
+      <View style={[styles.announcementImage, styles.noMediaContainer]}>
+        <Ionicons name="image-outline" size={24} color="#999" />
         <Text style={styles.noMediaTextSmall}>{message}</Text>
       </View>
     );
   };
 
-  const handleWhatsApp = () => {
-    if (!selectedAnnonce?.telephone) {
-      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
-      return;
-    }
-    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
-    const url = `whatsapp://send?phone=${phoneNumber}&text=Bonjour, je suis intéressé par votre annonce: ${selectedAnnonce?.description}`;
-    Linking.openURL(url).catch((err) => {
-      console.error('Erreur WhatsApp:', err);
-      Alert.alert('Erreur', 'Impossible d\'ouvrir WhatsApp. Vérifiez si l\'application est installée.');
-    });
-    closeModal();
-  };
-
-  const handleCall = () => {
-    if (!selectedAnnonce?.telephone) {
-      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
-      return;
-    }
-    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
-    const url = `tel:${phoneNumber}`;
-    Linking.openURL(url).catch((err) => {
-      console.error('Erreur Appel:', err);
-      Alert.alert('Erreur', 'Impossible de passer l\'appel.');
-    });
-    closeModal();
-  };
-
-  const handleMessage = () => {
-    if (!selectedAnnonce?.telephone) {
-      Alert.alert('Erreur', 'Numéro de téléphone non disponible pour cette annonce.');
-      return;
-    }
-    const phoneNumber = selectedAnnonce.telephone.replace(/\D/g, '');
-    const url = `sms:${phoneNumber}?body=Bonjour, je suis intéressé par votre annonce: ${selectedAnnonce?.description}`;
-    Linking.openURL(url).catch((err) => {
-      console.error('Erreur SMS:', err);
-      Alert.alert('Erreur', 'Impossible d\'envoyer le SMS.');
-    });
-    closeModal();
-  };
-
   // Composant pour afficher les prix correctement
-  const PriceDisplay = ({ item, isPopular = false }) => {
+  const PriceDisplay = ({ item }) => {
     const hasPromo = hasPromotion(item);
-    const priceStyle = isPopular ? styles.popularPrice : styles.horizontalPrice;
-    const promoPriceStyle = isPopular ? styles.popularPromoPrice : styles.horizontalPromoPrice;
 
     return (
       <View style={styles.priceContainer}>
         {hasPromo ? (
           <>
-            <Text style={priceStyle}>{formatPrice(item.prix_promo)}</Text>
-            <Text style={promoPriceStyle}>{formatPrice(item.prix_normal)}</Text>
+            <Text style={styles.announcementPrice}>{formatPrice(item.prix_promo)}</Text>
+            <Text style={styles.announcementPromoPrice}>{formatPrice(item.prix_normal)}</Text>
           </>
         ) : (
-          <Text style={priceStyle}>{formatPrice(item.prix_normal)}</Text>
+          <Text style={styles.announcementPrice}>{formatPrice(item.prix_normal)}</Text>
         )}
       </View>
     );
   };
 
-  // Composant pour afficher les prix dans les détails
-  const DetailPriceDisplay = ({ item }) => {
-    const hasPromo = hasPromotion(item);
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
 
-    return (
-      <View style={styles.detailPriceContainer}>
-        {hasPromo ? (
-          <>
-            <Text style={styles.detailPrice}>{formatPrice(item.prix_promo)}</Text>
-            <Text style={styles.detailPromoPrice}>{formatPrice(item.prix_normal)}</Text>
-          </>
-        ) : (
-          <Text style={styles.detailPrice}>{formatPrice(item.prix_normal)}</Text>
-        )}
-      </View>
-    );
+  // Fonction pour naviguer vers l'écran de détails
+  const navigateToDetail = (item) => {
+    // Naviguer vers l'écran 'AnnonceDetail' avec les données de l'annonce
+    navigation.navigate('AnnonceDetail', { annonce: item });
   };
 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header Section améliorée */}
-        <LinearGradient
-          colors={['#1a1a1a', '#2d2d2d']}
-          style={styles.header}
-        >
-          <View style={styles.headerContent}>
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Votre véhicule à crédit</Text>
-              <Text style={styles.headerSubtitle}>Trouvez la voiture de vos rêves</Text>
-            </View>
-            <Image
-              source={{ uri: imageUrls.logo }}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-        </LinearGradient>
+        {/* Barre de recherche */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher des annonces..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {/* Top Announcements Section */}
+        {/* Résultats de recherche */}
+        {searchQuery.trim() !== '' && (
+          <View style={styles.searchResultsHeader}>
+            <Text style={styles.searchResultsText}>
+              Résultats pour "{searchQuery}" : {filteredListe.length} annonce(s) trouvée(s)
+            </Text>
+          </View>
+        )}
+        
+        {/* la liste des type annonce*/}
+
+        <View style={styles.typecontainer}>
+          <Text style={styles.sectionTitle}>Types d'annonces</Text>
+          <FlatList
+          data={typeannonce}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          keyExtractor = {(item) => item.code_type.toString()}
+          renderItem = {({item}) => (
+          <TouchableOpacity
+            style={[
+              styles.typebox,
+              selectedType === item.code_type && styles.typeboxSelected
+            ]}
+            onPress={() => {
+              if (selectedType === item.code_type) {
+                setSelectedType(null);
+                setFilteredListe(liste);
+              } else {
+                setSelectedType(item.code_type);
+                const filtered = liste.filter(
+                  annonce => annonce.code_type === item.code_type
+                );
+                setFilteredListe(filtered);
+              }
+            }}
+             >
+            <Text
+              style={[
+                styles.typeText,
+                selectedType === item.code_type && styles.typeTextSelected
+              ]}
+            >
+              {item.libelle_annonce}
+            </Text>
+          </TouchableOpacity>
+
+          )}
+          />
+        </View>
+
+        {/* Section principale des annonces */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Ionicons name="flash" size={24} color="#FF6B00" />
-              <Text style={styles.sectionTitle}>Top annonces</Text>
+              <Text style={styles.sectionTitle}>Annonces</Text>
             </View>
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAll}>Voir plus</Text>
-              <Ionicons name="chevron-forward" size={16} color="#007AFF" />
-            </TouchableOpacity>
+            {!searchQuery && (
+              <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('ListeAnnonces')}>
+                <Text style={styles.viewAll}>Toutes</Text>
+                <Ionicons name="chevron-forward" size={14} color="#000000" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FF6B00" />
-            <Text style={styles.loadingText}>Chargement des annonces...</Text>
+            <ActivityIndicator size="small" color="#FF6B00" />
+            <Text style={styles.loadingText}>Chargement...</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={50} color="#FF6B00" />
+            <Ionicons name="alert-circle" size={40} color="#FF6B00" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryButton} onPress={getAnnonce}>
               <Text style={styles.retryText}>Réessayer</Text>
             </TouchableOpacity>
           </View>
-        ) : !liste || liste.length === 0 ? (
+        ) : !filteredListe || filteredListe.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="car-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Aucune annonce disponible</Text>
-            <Text style={styles.emptySubtext}>Revenez plus tard pour découvrir de nouvelles annonces</Text>
+            {searchQuery.trim() !== '' ? (
+              <>
+                <Ionicons name="search-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+                <Text style={styles.emptySubtext}>Essayez d'autres mots-clés</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="car-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Aucune annonce disponible</Text>
+              </>
+            )}
           </View>
         ) : (
-          <ScrollView 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.horizontalScrollContent}
-          >
-            {liste.map((item, index) => (
-              <View key={item.id_annonce || index} style={styles.horizontalAnnouncement}>
-                {renderMedia(item, false)}
-                
-                <View style={styles.horizontalContent}>
-                  <Text style={styles.horizontalTitle} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  
-                  <PriceDisplay item={item} isPopular={false} />
-                  
-                  <View style={styles.locationContainer}>
-                    <Ionicons name="location-outline" size={14} color="#666" />
-                    <Text style={styles.horizontalLocation}>{item.ville}</Text>
-                  </View>
-                  
-                  <View style={styles.horizontalButtonContainer}>
-                    <TouchableOpacity style={styles.detailsButton} onPress={() => openDetail(item)}>
-                      <Ionicons name="eye-outline" size={14} color="white" />
-                      <Text style={styles.detailsText}>Détails</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.contactButtonSmall} onPress={() => openModal(item)}>
-                      <Ionicons name="chatbubble-outline" size={14} color="white" />
-                      <Text style={styles.contactTextSmall}>Contacter</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Section Annonces Populaires */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Ionicons name="trending-up" size={24} color="#4CAF50" />
-              <Text style={styles.sectionTitle}>Annonces populaires</Text>
-            </View>
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAll}>Voir plus</Text>
-              <Ionicons name="chevron-forward" size={16} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {loadingPopular ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FF6B00" />
-            <Text style={styles.loadingText}>Chargement des annonces populaires...</Text>
-          </View>
-        ) : !popularannonce || popularannonce.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="car-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Aucune annonce populaire disponible</Text>
-          </View>
-        ) : (
-          <View style={styles.popularGrid}>
-            {popularChunks.map((chunk, chunkIndex) => (
-              <View key={chunkIndex} style={styles.popularRow}>
+          <View style={styles.annoncesGrid}>
+            {annonceChunks.map((chunk, chunkIndex) => (
+              <View key={chunkIndex} style={styles.annonceRow}>
                 {chunk.map((item, index) => (
-                  <View key={item.id_annonce || `${chunkIndex}-${index}`} style={styles.popularAnnouncement}>
-                    {renderMedia(item, true)}
+                  <TouchableOpacity 
+                    key={item.id_annonce || `${chunkIndex}-${index}`} 
+                    style={styles.annonceCard}
+                    onPress={() => navigateToDetail(item)}
+                    activeOpacity={0.9}
+                  >
+                    {renderMedia(item)}
                     
-                    <View style={styles.popularContent}>
-                      <Text style={styles.popularTitle} numberOfLines={2}>
+                    <View style={styles.annonceContent}>
+                      <Text style={styles.annonceTitle} numberOfLines={2}>
+                        {item.titre}
+                      </Text>
+                      <Text style={styles.annonceDescription} numberOfLines={2}>
                         {item.description}
                       </Text>
                       
-                      <PriceDisplay item={item} isPopular={true} />
+                      <PriceDisplay item={item} />
                       
                       <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={12} color="#666" />
-                        <Text style={styles.popularLocation}>{item.ville}</Text>
-                      </View>
-                      
-                      <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.detailsButton} onPress={() => openDetail(item)}>
-                          <Ionicons name="eye-outline" size={12} color="white" />
-                          <Text style={styles.detailsText}>Détails</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.contactButtonSmall} onPress={() => openModal(item)}>
-                          <Ionicons name="chatbubble-outline" size={12} color="white" />
-                          <Text style={styles.contactTextSmall}>Contacter</Text>
-                        </TouchableOpacity>
+                        <Ionicons name="location-outline" size={10} color="#666" />
+                        <Text style={styles.annonceLocation}>{item.utilisateur?.ville || 'Aucune'}</Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
                 {chunk.length === 1 && <View style={styles.emptySpace} />}
               </View>
@@ -722,119 +672,6 @@ const Menu = ({navigation}) => {
           </View>
         )}
       </ScrollView>
-
-      {/* Modal for Contact Options amélioré */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Contacter le vendeur</Text>
-              <TouchableOpacity onPress={closeModal} style={styles.closeIcon}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.profileSection}>
-              <View style={styles.profileAvatar}>
-                <Ionicons name="person-circle" size={70} color="#007AFF"/>
-              </View>
-              <View style={styles.profileInfo}>
-                <Text style={styles.userName}>{user?.nom_prenom || 'Utilisateur'}</Text>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location-outline" size={14} color="#666" />
-                  <Text style={styles.userCity}>{user?.ville || 'Ville non précisée'}</Text>
-                </View>
-              <TouchableOpacity 
-                    style={styles.profileButton}
-                    onPress={() => {
-                      closeModal();
-                      
-                      // user_id est maintenant présent dans selectedAnnonce
-                      const vendeurId = selectedAnnonce?.user_id;
-
-                      if (vendeurId) {
-                        navigation.navigate('AnnoncesProfil', { userId: vendeurId });
-                      } else {
-                        Alert.alert('Erreur', 'ID du vendeur temporairement indisponible.');
-                      }
-                    }}
-                  >
-                    <Text style={styles.profileButtonText}>Voir toutes ses annonces</Text>
-            </TouchableOpacity>
-              </View>
-            </View>
-                        
-            <View style={styles.separator} />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalButton, styles.whatsappButton]} onPress={handleWhatsApp}>
-                <Ionicons name='logo-whatsapp' size={24} color="white" />
-                <Text style={styles.modalButtonText}>WhatsApp</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={[styles.modalButton, styles.callButton]} onPress={handleCall}>
-                <Ionicons name="call-outline" size={24} color="white" />
-                <Text style={styles.modalButtonText}>Appeler</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={[styles.modalButton, styles.messageButton]} onPress={handleMessage}>
-                <Ionicons name="chatbubble-outline" size={24} color="white" />
-                <Text style={styles.modalButtonText}>Message</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.closeButtonText}>Fermer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal detail amélioré */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={detailModalVisible}
-        onRequestClose={closeDetail}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.detailsModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Détails de l'annonce</Text>
-              <TouchableOpacity onPress={closeDetail} style={styles.closeIcon}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            {selectedAnnonce && (
-              <ScrollView style={styles.detailScroll}>
-                <View style={styles.detailContent}>
-                  <Text style={styles.detailTitle}>{selectedAnnonce.description}</Text>
-                  
-                  <DetailPriceDisplay item={selectedAnnonce} />
-                  
-                  <View style={styles.detailInfo}>
-                    <View style={styles.infoItem}>
-                      <Ionicons name="location-outline" size={18} color="#666" />
-                      <Text style={styles.infoText}>{selectedAnnonce.ville}</Text>
-                    </View>
-                  </View>
-                </View>
-              </ScrollView>
-            )}
-            
-            <TouchableOpacity style={styles.contactMainButton} onPress={() => { closeDetail(); openModal(selectedAnnonce); }}>
-              <Ionicons name="chatbubble-ellipses" size={20} color="white" />
-              <Text style={styles.contactMainButtonText}>Contacter le vendeur</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Full Screen Media Modal */}
       {renderFullScreenMedia()}
@@ -847,209 +684,216 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#e2e0e0ff',
+    backgroundColor: '#f5f5f5',
   },
   scrollView: {
     flex: 1,
   },
-  // Header amélioré
-  header: {
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  headerContent: {
+  // Barre de recherche
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
+    marginVertical: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTextContainer: {
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
     flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  headerSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    color: '#333',
+    paddingVertical: 2,
   },
-  logo: {
-    width: 80,
-    height: 80,
+  clearButton: {
+    padding: 5,
   },
-  // Sections améliorées
+  searchResultsHeader: {
+    paddingHorizontal: 12,
+    marginBottom: 15,
+  },
+  searchResultsText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  // Sections
   section: {
-    paddingHorizontal: 15,
-    marginVertical: 20,
+    paddingHorizontal: 12,
+    marginVertical: 15,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
   },
   viewAll: {
-    color: '#007AFF',
+    color: '#000000',
     fontWeight: '500',
-    marginRight: 4,
+    fontSize: 12,
+    marginRight: 3,
   },
-  // Loading et erreurs améliorés
+  // Loading et erreurs
   loadingContainer: {
     alignItems: 'center',
-    padding: 40,
-    marginVertical: 20,
+    padding: 30,
+    marginVertical: 15,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 8,
     color: '#666',
-    fontSize: 16,
+    fontSize: 14,
   },
   errorContainer: {
     alignItems: 'center',
-    padding: 40,
-    marginVertical: 20,
+    padding: 30,
+    marginVertical: 15,
     backgroundColor: '#fff',
-    marginHorizontal: 15,
-    borderRadius: 15,
+    marginHorizontal: 12,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
-    marginVertical: 10,
+    marginVertical: 8,
   },
   retryButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 8,
   },
   retryText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 40,
-    marginVertical: 20,
+    padding: 30,
+    marginVertical: 15,
     backgroundColor: '#fff',
-    marginHorizontal: 15,
-    borderRadius: 15,
+    marginHorizontal: 12,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   emptyText: {
     color: '#666',
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 10,
-    fontWeight: '600',
+    marginTop: 8,
+    fontWeight: '500',
   },
   emptySubtext: {
     color: '#999',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 5,
+    marginTop: 4,
   },
-  // Cartes horizontales améliorées
-  horizontalScroll: {
+  // Grille d'annonces
+  annoncesGrid: {
+    paddingHorizontal: 8,
+    marginBottom: 50,
+  },
+  annonceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 10,
   },
-  horizontalScrollContent: {
-    paddingHorizontal: 10,
-  },
-  horizontalAnnouncement: {
-    width: 200,
+  annonceCard: {
+    width: '48%',
     backgroundColor: '#fff',
-    marginHorizontal: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 1,
     overflow: 'hidden',
-    marginBottom: 15,
+    marginBottom: 8,
   },
-  horizontalContent: {
-    padding: 15,
+  emptySpace: {
+    width: '48%',
   },
-  horizontalTitle: {
-    fontSize: 16,
+  annonceContent: {
+    padding: 8,
+  },
+  annonceTitle: {
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
-    lineHeight: 20,
+    marginBottom: 2,
+  },
+  annonceDescription: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+    lineHeight: 14,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 8,
+    marginBottom: 6,
     flexWrap: 'wrap',
   },
-  horizontalPrice: {
-    fontSize: 18,
+  announcementPrice: {
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#FF6B00',
-    marginRight: 8,
+    marginRight: 6,
   },
-  horizontalPromoPrice: {
-    fontSize: 14,
+  announcementPromoPrice: {
+    fontSize: 10,
     color: '#666',
+    marginBottom: 3,
     textDecorationLine: 'line-through',
   },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  horizontalLocation: {
-    fontSize: 14,
+  annonceLocation: {
+    fontSize: 10,
     color: '#666',
-    marginLeft: 4,
+    marginLeft: 3,
   },
-  horizontalButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  // Styles médias améliorés
+  // Styles médias
   mediaContainer: {
-    position: 'relative',
-  },
-  popularMediaContainer: {
     position: 'relative',
   },
   mediaTouchable: {
@@ -1057,35 +901,31 @@ const styles = StyleSheet.create({
   },
   announcementImage: {
     width: '100%',
-    height: 180,
-  },
-  popularImage: {
-    width: '100%',
-    height: 140,
+    height: 90,
   },
   imageGradient: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 60,
+    height: 40,
   },
   videoIndicator: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    top: 6,
+    left: 6,
     backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   videoIndicatorText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 'bold',
-    marginLeft: 4,
+    marginLeft: 3,
   },
   videoOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1095,47 +935,47 @@ const styles = StyleSheet.create({
   },
   mediaIndicator: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 6,
+    right: 6,
     backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   mediaIndicatorText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 'bold',
   },
   navButton: {
     position: 'absolute',
     top: '50%',
     backgroundColor: 'rgba(0,0,0,0.5)',
-    width: 35,
-    height: 35,
-    borderRadius: 18,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -18,
+    marginTop: -13,
   },
   prevButton: {
-    left: 10,
+    left: 6,
   },
   nextButton: {
-    right: 10,
+    right: 6,
   },
   promoBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    top: 6,
+    left: 6,
     backgroundColor: '#FF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   promoBadgeText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 'bold',
   },
   noMediaContainer: {
@@ -1144,299 +984,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#e9ecef',
     borderWidth: 1,
     borderColor: '#dee2e6',
-    borderRadius: 15,
+    borderRadius: 12,
   },
   noMediaTextSmall: {
-    fontSize: 10,
+    fontSize: 8,
     color: '#666',
     textAlign: 'center',
-    marginTop: 5,
+    marginTop: 3,
   },
-  // Grille populaire améliorée
-  popularGrid: {
-    paddingHorizontal: 10,
-    marginBottom: 60,
-  },
-  popularRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  popularAnnouncement: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-    overflow: 'hidden',
-  },
-  emptySpace: {
-    width: '48%',
-  },
-  popularContent: {
-    padding: 12,
-  },
-  popularTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 6,
-    lineHeight: 18,
-  },
-  popularPrice: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#FF6B00',
-    marginBottom: 2,
-  },
-  popularPromoPrice: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-    textDecorationLine: 'line-through',
-  },
-  popularLocation: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  buttonContainer: {
+  locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 8,
   },
-  // Boutons améliorés
-  detailsButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  detailsText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 11,
-  },
-  contactButtonSmall: {
-    backgroundColor: '#21a403',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  contactTextSmall: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  // Modals améliorés
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 0,
-    width: '90%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeIcon: {
-    padding: 4,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  profileAvatar: {
-    marginRight: 15,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  userCity: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
-  },
-  profileButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  profileButtonText: {
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    backgroundColor: '#007AFF',
-    borderRadius: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-    gap: 10,
-  },
-  modalButton: {
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 15,
-    flex: 1,
-    minWidth: 80,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginTop: 8,
-    fontSize: 12,
-  },
-  closeButton: {
-    backgroundColor: '#6c757d',
-    paddingVertical: 15,
-    margin: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  whatsappButton: {
-    backgroundColor: '#25D366',
-  },
-  callButton: {
-    backgroundColor: '#007AFF',
-  },
-  messageButton: {
-    backgroundColor: '#FF9500',
-  },
-  // Modal détails amélioré
-  detailsModalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 0,
-    width: '90%',
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  detailScroll: {
-    flex: 1,
-  },
-  detailContent: {
-    padding: 20,
-  },
-  detailTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-    lineHeight: 28,
-  },
-  detailPriceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 20,
-    flexWrap: 'wrap',
-  },
-  detailPrice: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF6B00',
-    marginRight: 12,
-  },
-  detailPromoPrice: {
-    fontSize: 18,
-    color: '#666',
-    textDecorationLine: 'line-through',
-  },
-  detailInfo: {
-    marginBottom: 20,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#666',
-    marginLeft: 8,
-  },
-  contactMainButton: {
-    backgroundColor: '#21a403',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    margin: 20,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  contactMainButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#E0E0E0",
-    marginHorizontal: 20,
-  },
-  // Styles plein écran existants
+  // Styles plein écran
   fullScreenContainer: {
     flex: 1,
     backgroundColor: 'black',
@@ -1510,6 +1071,36 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  // Styles type annonce
+  sectionTitle:{
+    marginBottom: 12,
+    fontSize: 18,
+  },
+  typecontainer: {
+    marginVertical: 10,
+    marginHorizontal: 8,
+  },
+  typebox: {
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    elevation: 2,
+  },
+  typeText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  typeboxSelected: {
+    backgroundColor: '#FF6B00',
+    borderColor: '#FF6B00',
+  },
+  typeTextSelected: {
+    color: '#ffffff',
   },
 });
 

@@ -1,377 +1,1088 @@
-import React, { useState, useEffect, useContext } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  TextInput,
-  Modal,
-  Dimensions,
-  StatusBar,
-  Linking,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Video } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useContext, useEffect, useState, useRef } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert, Dimensions, StatusBar, TextInput, FlatList } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
+import { Video } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = (screenWidth - 30) / 2;
-
-export default function ListeAnnonce({ navigation }) {
+const Menu = ({navigation}) => {
   const [liste, setListe] = useState([]);
   const [filteredListe, setFilteredListe] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [rechercher, setRechercher] = useState('');
   const [user] = useContext(GlobalContext);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState({});
+  const [fullScreenMedia, setFullScreenMedia] = useState(null);
+  const [playingVideos, setPlayingVideos] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const videoRefs = useRef({});
+  const [typeannonce, setTypeAnnonce] = useState('');
+  const [selectedType, setSelectedType] = useState(null);
 
-  // Plein écran
-  const [fullScreenData, setFullScreenData] = useState(null);
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  // liste des type annonces
+
+  useEffect(() => {
+    getTypeAnnonce();
+  },[]);
+
+  const getTypeAnnonce = async () => {
+    const response = await fetch('https://epencia.net/app/souangah/annonce/type-annonce.php');
+    const result = await response.json();
+    setTypeAnnonce(result);
+    
+  }
 
   useEffect(() => {
     getAnnonce();
   }, []);
 
+  // Filtrer les annonces quand la recherche change
   useEffect(() => {
-    const filtered = liste.filter(item =>
-      (item.titre?.toLowerCase() || '').includes(rechercher.toLowerCase()) ||
-      (item.description?.toLowerCase() || '').includes(rechercher.toLowerCase()) ||
-      (item.prix_promo?.toLowerCase() || '').includes(rechercher.toLowerCase())
-    );
-    setFilteredListe(filtered);
-  }, [rechercher, liste]);
+    if (searchQuery.trim() === '') {
+      setFilteredListe(liste);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = liste.filter(item => 
+        (item.titre && item.titre.toLowerCase().includes(query)) ||
+        (item.description && item.description.toLowerCase().includes(query)) ||
+        (item.utilisateur?.ville && item.utilisateur.ville.toLowerCase().includes(query))
+      );
+      setFilteredListe(filtered);
+    }
+  }, [searchQuery, liste]);
 
   const getAnnonce = async () => {
+   
     try {
-      setRefreshing(true);
+      setLoading(true);
+      setError(null);
       const response = await fetch('https://epencia.net/app/souangah/annonce/liste-annonce.php');
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
       const result = await response.json();
+      
+      // L'API retourne directement un tableau d'annonces
       if (Array.isArray(result)) {
         setListe(result);
         setFilteredListe(result);
+        console.log('Annonces chargées:', result.length);
       } else {
+        console.warn('Structure de données inattendue:', result);
         setListe([]);
         setFilteredListe([]);
+        setError('Format de données non reconnu');
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur Top Annonces:', error);
+      setError('Erreur de chargement des annonces');
+      setListe([]);
+      setFilteredListe([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const formatPrice = price =>
-    price ? `${Number(price).toLocaleString('fr-FR')} FCFA` : 'Prix non défini';
-
-  const hasPromotion = item =>
-    item.prix_promo && item.prix_promo !== '0' && item.prix_promo !== item.prix_normal;
-
-  const cleanBase64 = str => str?.replace(/^data:[a-z\/]+;base64,/, '').trim();
-
-  const openFullScreen = (item, index = 0) => {
-    setFullScreenData({ item });
-    setCurrentMediaIndex(index);
+  const chunkArray = (array, chunkSize) => {
+    if (!Array.isArray(array)) return [];
+    const chunks = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   };
 
-  const closeFullScreen = () => setFullScreenData(null);
+  const annonceChunks = chunkArray(filteredListe, 2);
 
-  const navigateMedia = direction => {
-    if (!fullScreenData) return;
-    const medias = fullScreenData.item.medias || [];
-    const total = medias.length || 1;
-    let newIndex = currentMediaIndex + (direction === 'next' ? 1 : -1);
-    if (newIndex < 0) newIndex = total - 1;
-    if (newIndex >= total) newIndex = 0;
-    setCurrentMediaIndex(newIndex);
+  const handleMediaPress = (annonceId, index) => {
+    setSelectedMediaIndex(prev => ({
+      ...prev,
+      [annonceId]: index
+    }));
   };
 
-// Remplace cette fonction dans ton code
-const renderGridMedia = (item) => {
-  const medias = item.medias && item.medias.length > 0 ? item.medias : null;
-  const totalMedias = medias ? medias.length : 1;
-  const media = medias
-    ? medias[0]
-    : { type_media: 'image', type_fichier: item.type, fichier64: item.photo64 };
-
-  const isVideo = media.type_media === 'video';
-  const uri = `data:${media.type_fichier || 'image/jpeg'};base64,${cleanBase64(media.fichier64)}`;
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.95}
-      onPress={() => openFullScreen(item, 0)}
-      style={styles.mediaWrapper}
-    >
-      {isVideo ? (
-        <View style={styles.videoPlaceholder}>
-          <Ionicons name="play-circle" size={48} color="#fff" />
-          <Text style={styles.videoText}>VIDÉO</Text>
-        </View>
-      ) : (
-        <Image
-          source={{ uri }}
-          style={styles.gridImage}
-          resizeMode="cover"
-          progressiveRenderingEnabled
-          fadeDuration={200}
-        />
-      )}
-
-      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={styles.gradient} />
-
-      {hasPromotion(item) && (
-        <View style={styles.promoBadge}>
-          <Text style={styles.promoText}>PROMO</Text>
-        </View>
-      )}
-
-      {/* Indicateur 1/4, 2/4, etc. */}
-      {totalMedias > 1 && (
-        <View style={styles.mediaCount}>
-          <Text style={styles.mediaCountText}>
-            1/{totalMedias}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.gridCard}
-     onPress={() => navigation.navigate('DetailsAnnonce', { annonceId: item.id_annonce })}
-    >
-      {renderGridMedia(item)}
-
-      <View style={styles.gridContent}>
-        <Text style={styles.gridTitle} numberOfLines={2}>
-          {item.titre || 'Sans titre'}
-        </Text>
-
-        <View style={styles.priceRow}>
-          {hasPromotion(item) ? (
-            <>
-              <Text style={styles.promoPrice}>{formatPrice(item.prix_promo)}</Text>
-              <Text style={styles.oldPrice}>{formatPrice(item.prix_normal)}</Text>
-            </>
-          ) : (
-            <Text style={styles.normalPrice}>{formatPrice(item.prix_normal)}</Text>
-          )}
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Ionicons name="eye" size={12} color="#888" />
-            <Text style={styles.statText}>{item.vue || 0}</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="people-outline" size={12} color="#888" />
-            <Text style={styles.statText}>{item.audience || 0}</Text>
-          </View>
-        </View>
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={styles.callBtn}
-            onPress={() => Linking.openURL(`tel:${item.telephone}`)}
-          >
-            <Ionicons name="call" size={16} color="#3378df" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.whatsappBtn}
-            onPress={() => Linking.openURL(`https://wa.me/${item.telephone}`)}
-          >
-            <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderRow = ({ item, index }) => {
-    if (index % 2 !== 0) return null;
-    const nextItem = filteredListe[index + 1];
-    return (
-      <View style={styles.row}>
-        {renderItem({ item })}
-        {nextItem && renderItem({ item: nextItem })}
-      </View>
-    );
+  const openFullScreen = async (item, mediaIndex = 0) => {
+    await stopAllVideos();
+    
+    setFullScreenMedia({ item, mediaIndex });
+    
+    if (item.medias && item.medias[mediaIndex]?.type_media === 'video') {
+      setPlayingVideos(prev => ({
+        ...prev,
+        [`fullscreen_${item.id_annonce}`]: true
+      }));
+    }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#FF6B00" />
-        <Text style={styles.loadingText}>Chargement des annonces...</Text>
-      </View>
-    );
-  }
+  const closeFullScreen = async () => {
+    if (fullScreenMedia && fullScreenMedia.item.medias) {
+      const currentMedia = fullScreenMedia.item.medias[fullScreenMedia.mediaIndex];
+      if (currentMedia.type_media === 'video' && videoRefs.current[`fullscreen_${fullScreenMedia.item.id_annonce}`]) {
+        await videoRefs.current[`fullscreen_${fullScreenMedia.item.id_annonce}`].stopAsync();
+      }
+    }
+    
+    setPlayingVideos(prev => {
+      const newState = { ...prev };
+      delete newState[`fullscreen_${fullScreenMedia?.item.id_annonce}`];
+      return newState;
+    });
+    
+    setFullScreenMedia(null);
+  };
 
-  return (
-    <View style={styles.container}>
-      {/* Barre de recherche */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher des annonces..."
-          value={rechercher}
-          onChangeText={setRechercher}
-        />
-        {rechercher ? (
-          <TouchableOpacity onPress={() => setRechercher('')}>
-            <Ionicons name="close-circle" size={20} color="#888" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+  const navigateFullScreenMedia = async (direction) => {
+    if (!fullScreenMedia) return;
 
-      <FlatList
-        data={filteredListe}
-        renderItem={renderRow}
-        keyExtractor={(_, i) => i.toString()}
-        contentContainerStyle={styles.list}
-        refreshing={refreshing}
-        onRefresh={getAnnonce}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="car-outline" size={80} color="#ccc" />
-            <Text style={styles.emptyText}>
-              {rechercher ? 'Aucune annonce trouvée' : 'Aucune annonce disponible'}
-            </Text>
-          </View>
+    const { item, mediaIndex } = fullScreenMedia;
+    const medias = item.medias || [];
+
+    if (medias.length <= 1) return;
+
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = (mediaIndex + 1) % medias.length;
+    } else {
+      newIndex = (mediaIndex - 1 + medias.length) % medias.length;
+    }
+
+    const currentMedia = medias[mediaIndex];
+    if (currentMedia.type_media === 'video' && videoRefs.current[`fullscreen_${item.id_annonce}`]) {
+      await videoRefs.current[`fullscreen_${item.id_annonce}`].stopAsync();
+    }
+
+    setFullScreenMedia({ item, mediaIndex: newIndex });
+    
+    setPlayingVideos(prev => {
+      const newState = { ...prev };
+      delete newState[`fullscreen_${item.id_annonce}`];
+      if (medias[newIndex].type_media === 'video') {
+        newState[`fullscreen_${item.id_annonce}`] = true;
+      }
+      return newState;
+    });
+  };
+
+  const stopAllVideos = async () => {
+    const stopPromises = Object.keys(videoRefs.current).map(async (key) => {
+      if (videoRefs.current[key] && typeof videoRefs.current[key].stopAsync === 'function') {
+        try {
+          await videoRefs.current[key].stopAsync();
+        } catch (error) {
+          console.log('Erreur lors de l\'arrêt de la vidéo:', error);
         }
-      />
+      }
+    });
+    
+    await Promise.all(stopPromises);
+    setPlayingVideos({});
+  };
 
-      {/* Plein écran */}
-      <Modal visible={!!fullScreenData} animationType="fade" statusBarTranslucent>
-        <View style={styles.fullScreen}>
-          <StatusBar hidden />
-          <TouchableOpacity style={styles.closeBtn} onPress={closeFullScreen}>
-            <Ionicons name="close" size={36} color="#fff" />
+  const handleVideoPlay = (annonceId) => {
+    setPlayingVideos(prev => ({
+      ...prev,
+      [annonceId]: true
+    }));
+  };
+
+  const handleVideoPause = (annonceId) => {
+    setPlayingVideos(prev => {
+      const newState = { ...prev };
+      delete newState[annonceId];
+      return newState;
+    });
+  };
+
+  const cleanBase64Data = (base64String) => {
+    if (!base64String) return null;
+    
+    // Vérifier si le base64 est déjà préfixé
+    if (base64String.startsWith('data:')) {
+      return base64String;
+    }
+    
+    // Si ce n'est pas préfixé, c'est probablement déjà un base64 pur
+    return base64String.trim();
+  };
+
+  // Fonction pour formater le prix
+  const formatPrice = (price) => {
+    if (!price || price === '0') return 'Prix à discuter';
+    const numericPrice = parseInt(price);
+    if (isNaN(numericPrice)) return 'Prix à discuter';
+    return `${numericPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA`;
+  };
+
+  // Fonction pour vérifier si une annonce a une promotion
+  const hasPromotion = (item) => {
+    return item.prix_promo && item.prix_promo !== item.prix_normal && item.prix_promo !== '0' && item.prix_promo !== '0';
+  };
+
+  const renderMedia = (item) => {
+    const currentIndex = selectedMediaIndex[item.id_annonce] || 0;
+
+    if (item.medias && item.medias.length > 0) {
+      const currentMedia = item.medias[currentIndex];
+      
+      const cleanedBase64 = cleanBase64Data(currentMedia.fichier64);
+      
+      if (!cleanedBase64) {
+        return renderNoMedia('Données base64 invalides');
+      }
+
+      let mediaUri = cleanedBase64;
+      // Si le base64 n'a pas de préfixe data:, l'ajouter
+      if (!cleanedBase64.startsWith('data:')) {
+        const mimeType = currentMedia.type_fichier || 
+                        (currentMedia.type_media === 'video' ? 'video/mp4' : 'image/jpeg');
+        mediaUri = `data:${mimeType};base64,${cleanedBase64}`;
+      }
+
+      const isVideo = currentMedia.type_media === 'video';
+      const isPlaying = playingVideos[item.id_annonce];
+
+      return (
+        <View style={styles.mediaContainer}>
+          <TouchableOpacity 
+            style={styles.mediaTouchable}
+            onPress={(e) => {
+              e.stopPropagation(); // Empêche la propagation au parent
+              openFullScreen(item, currentIndex);
+            }}
+            activeOpacity={0.9}
+          >
+            {!isVideo ? (
+              <Image 
+                source={{ uri: mediaUri }}
+                style={styles.announcementImage}
+                resizeMode="cover"
+                onError={(e) => {
+                  console.log('Media image failed to load:', e.nativeEvent.error);
+                  console.log('URI essayée:', mediaUri.substring(0, 100) + '...');
+                }}
+              />
+            ) : (
+              <Video
+                ref={ref => videoRefs.current[item.id_annonce] = ref}
+                source={{ uri: mediaUri }}
+                style={styles.announcementImage}
+                useNativeControls
+                resizeMode="cover"
+                shouldPlay={false}
+                isLooping={false}
+                onError={(e) => {
+                  console.log('Video failed to load:', e);
+                  console.log('URI essayée:', mediaUri.substring(0, 100) + '...');
+                }}
+                onLoad={() => console.log('Video loaded successfully')}
+                onPlaybackStatusUpdate={(status) => {
+                  if (status.isPlaying) {
+                    handleVideoPlay(item.id_annonce);
+                  } else if (status.didJustFinish || status.isLoaded) {
+                    handleVideoPause(item.id_annonce);
+                  }
+                }}
+              />
+            )}
+
+            {/* Overlay gradient */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)']}
+              style={styles.imageGradient}
+            />
+
+            {isVideo && (
+              <View style={styles.videoIndicator}>
+                <Ionicons name="play-circle" size={12} color="white" />
+                <Text style={styles.videoIndicatorText}>VIDÉO</Text>
+              </View>
+            )}
+
+            {isVideo && !isPlaying && (
+              <View style={styles.videoOverlay}>
+                <Ionicons name="play" size={20} color="white" />
+              </View>
+            )}
+
+            {/* Promotion badge */}
+            {hasPromotion(item) && (
+              <View style={styles.promoBadge}>
+                <Text style={styles.promoBadgeText}>PROMO</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
-          {fullScreenData && (
-            (() => {
-              const item = fullScreenData.item;
-              const medias = item.medias || [];
-              const media = medias[currentMediaIndex] || {
-                type_media: 'image',
-                type_fichier: item.type,
-                fichier64: item.photo64,
-              };
-              const uri = `data:${media.type_fichier || 'image/jpeg'};base64,${cleanBase64(media.fichier64)}`;
-
-              return media.type_media === 'video' ? (
-                <Video
-                  source={{ uri }}
-                  style={styles.fullMedia}
-                  useNativeControls
-                  resizeMode="contain"
-                  shouldPlay
-                  isLooping
-                />
-              ) : (
-                <Image source={{ uri }} style={styles.fullMedia} resizeMode="contain" />
-              );
-            })()
+          {item.medias.length > 1 && (
+            <View style={styles.mediaIndicator}>
+              <Text style={styles.mediaIndicatorText}>
+                {currentIndex + 1} / {item.medias.length}
+              </Text>
+            </View>
           )}
 
-          {fullScreenData?.item.medias?.length > 1 && (
+          {item.medias.length > 1 && (
             <>
-              <TouchableOpacity style={[styles.navBtn, styles.prev]} onPress={() => navigateMedia('prev')}>
-                <Ionicons name="chevron-back" size={44} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.navBtn, styles.next]} onPress={() => navigateMedia('next')}>
-                <Ionicons name="chevron-forward" size={44} color="#fff" />
-              </TouchableOpacity>
-              <View style={styles.counter}>
-                <Text style={styles.counterText}>
-                  {currentMediaIndex + 1} / {fullScreenData.item.medias.length}
+              {currentIndex > 0 && (
+                <TouchableOpacity 
+                  style={[styles.navButton, styles.prevButton]}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Empêche la propagation au parent
+                    handleMediaPress(item.id_annonce, currentIndex - 1);
+                  }}
+                >
+                  <Ionicons name="chevron-back" size={16} color="white" />
+                </TouchableOpacity>
+              )}
+              {currentIndex < item.medias.length - 1 && (
+                <TouchableOpacity 
+                  style={[styles.navButton, styles.nextButton]}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Empêche la propagation au parent
+                    handleMediaPress(item.id_annonce, currentIndex + 1);
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={16} color="white" />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+      );
+    } 
+    else if (item.photo64) {
+      const cleanedBase64 = cleanBase64Data(item.photo64);
+      
+      if (!cleanedBase64) {
+        return renderNoMedia('Données base64 invalides');
+      }
+
+      let imageUri = cleanedBase64;
+      // Si le base64 n'a pas de préfixe data:, l'ajouter
+      if (!cleanedBase64.startsWith('data:')) {
+        const mimeType = item.type || 'image/jpeg';
+        imageUri = `data:${mimeType};base64,${cleanedBase64}`;
+      }
+
+      return (
+        <TouchableOpacity 
+          onPress={(e) => {
+            e.stopPropagation(); // Empêche la propagation au parent
+            openFullScreen(item);
+          }}
+          activeOpacity={0.9}
+        >
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.announcementImage}
+            resizeMode="cover"
+            onError={(e) => {
+              console.log('Single image failed to load:', e.nativeEvent.error);
+              console.log('URI essayée:', imageUri.substring(0, 100) + '...');
+            }}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.3)']}
+            style={styles.imageGradient}
+          />
+        </TouchableOpacity>
+      );
+    }
+    else {
+      return renderNoMedia('Aucune image');
+    }
+  };
+
+  const renderFullScreenMedia = () => {
+    if (!fullScreenMedia) return null;
+
+    const { item, mediaIndex } = fullScreenMedia;
+    const medias = item.medias || [];
+    const currentMedia = medias[mediaIndex] || { type_media: 'image', fichier64: item.photo64, type_fichier: item.type };
+    
+    const cleanedBase64 = cleanBase64Data(currentMedia.fichier64);
+    if (!cleanedBase64) return null;
+
+    let mediaUri = cleanedBase64;
+    if (!cleanedBase64.startsWith('data:')) {
+      const mimeType = currentMedia.type_fichier || 
+                      (currentMedia.type_media === 'video' ? 'video/mp4' : 'image/jpeg');
+      mediaUri = `data:${mimeType};base64,${cleanedBase64}`;
+    }
+    
+    const isVideo = currentMedia.type_media === 'video';
+
+    return (
+      <Modal
+        visible={!!fullScreenMedia}
+        animationType="fade"
+        statusBarTranslucent={true}
+      >
+        <View style={styles.fullScreenContainer}>
+          <StatusBar hidden={true} />
+          
+          <TouchableOpacity 
+            style={styles.closeFullScreenButton}
+            onPress={closeFullScreen}
+          >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+
+          <View style={styles.fullScreenMediaContainer}>
+            {!isVideo ? (
+              <Image 
+                source={{ uri: mediaUri }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <Video
+                ref={ref => videoRefs.current[`fullscreen_${item.id_annonce}`] = ref}
+                source={{ uri: mediaUri }}
+                style={styles.fullScreenVideo}
+                useNativeControls
+                resizeMode="contain"
+                shouldPlay={true}
+                isLooping={true}
+                onError={(e) => console.log('Fullscreen video failed to load:', e)}
+              />
+            )}
+          </View>
+
+          {medias.length > 1 && (
+            <>
+              <View style={styles.fullScreenIndicator}>
+                <Text style={styles.fullScreenIndicatorText}>
+                  {mediaIndex + 1} / {medias.length}
                 </Text>
               </View>
+
+              <TouchableOpacity 
+                style={[styles.fullScreenNavButton, styles.fullScreenPrevButton]}
+                onPress={() => navigateFullScreenMedia('prev')}
+              >
+                <Ionicons name="chevron-back" size={30} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.fullScreenNavButton, styles.fullScreenNextButton]}
+                onPress={() => navigateFullScreenMedia('next')}
+              >
+                <Ionicons name="chevron-forward" size={30} color="white" />
+              </TouchableOpacity>
             </>
+          )}
+
+          {isVideo && (
+            <View style={styles.fullScreenVideoIndicator}>
+              <Text style={styles.fullScreenVideoIndicatorText}> VIDÉO</Text>
+            </View>
           )}
         </View>
       </Modal>
+    );
+  };
+
+  const renderNoMedia = (message) => {
+    return (
+      <View style={[styles.announcementImage, styles.noMediaContainer]}>
+        <Ionicons name="image-outline" size={24} color="#999" />
+        <Text style={styles.noMediaTextSmall}>{message}</Text>
+      </View>
+    );
+  };
+
+  // Composant pour afficher les prix correctement
+  const PriceDisplay = ({ item }) => {
+    const hasPromo = hasPromotion(item);
+
+    return (
+      <View style={styles.priceContainer}>
+        {hasPromo ? (
+          <>
+            <Text style={styles.announcementPrice}>{formatPrice(item.prix_promo)}</Text>
+            <Text style={styles.announcementPromoPrice}>{formatPrice(item.prix_normal)}</Text>
+          </>
+        ) : (
+          <Text style={styles.announcementPrice}>{formatPrice(item.prix_normal)}</Text>
+        )}
+      </View>
+    );
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  // Fonction pour naviguer vers l'écran de détails
+  const navigateToDetail = (item) => {
+    // Naviguer vers l'écran 'AnnonceDetail' avec les données de l'annonce
+    navigation.navigate('AnnonceDetail', { annonce: item });
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Barre de recherche */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher des annonces..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Résultats de recherche */}
+        {searchQuery.trim() !== '' && (
+          <View style={styles.searchResultsHeader}>
+            <Text style={styles.searchResultsText}>
+              Résultats pour "{searchQuery}" : {filteredListe.length} annonce(s) trouvée(s)
+            </Text>
+          </View>
+        )}
+        
+        {/* la liste des type annonce*/}
+
+        <View style={styles.typecontainer}>
+          <Text style={styles.sectionTitle}>Types d'annonces</Text>
+          <FlatList
+          data={typeannonce}
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          keyExtractor = {(item) => item.code_type.toString()}
+          renderItem = {({item}) => (
+          <TouchableOpacity
+            style={[
+              styles.typebox,
+              selectedType === item.code_type && styles.typeboxSelected
+            ]}
+            onPress={() => {
+              if (selectedType === item.code_type) {
+                setSelectedType(null);
+                setFilteredListe(liste);
+              } else {
+                setSelectedType(item.code_type);
+                const filtered = liste.filter(
+                  annonce => annonce.code_type === item.code_type
+                );
+                setFilteredListe(filtered);
+              }
+            }}
+             >
+            <Text
+              style={[
+                styles.typeText,
+                selectedType === item.code_type && styles.typeTextSelected
+              ]}
+            >
+              {item.libelle_annonce}
+            </Text>
+          </TouchableOpacity>
+
+          )}
+          />
+        </View>
+
+        {/* Section principale des annonces */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>Annonces</Text>
+            </View>
+          </View>
+        </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#FF6B00" />
+            <Text style={styles.loadingText}>Chargement...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={40} color="#FF6B00" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={getAnnonce}>
+              <Text style={styles.retryText}>Réessayer</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !filteredListe || filteredListe.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            {searchQuery.trim() !== '' ? (
+              <>
+                <Ionicons name="search-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+                <Text style={styles.emptySubtext}>Essayez d'autres mots-clés</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="car-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Aucune annonce disponible</Text>
+              </>
+            )}
+          </View>
+        ) : (
+          <View style={styles.annoncesGrid}>
+            {annonceChunks.map((chunk, chunkIndex) => (
+              <View key={chunkIndex} style={styles.annonceRow}>
+                {chunk.map((item, index) => (
+                  <TouchableOpacity 
+                    key={item.id_annonce || `${chunkIndex}-${index}`} 
+                    style={styles.annonceCard}
+                    onPress={() => navigateToDetail(item)}
+                    activeOpacity={0.9}
+                  >
+                    {renderMedia(item)}
+                    
+                    <View style={styles.annonceContent}>
+                      <Text style={styles.annonceTitle} numberOfLines={2}>
+                        {item.titre}
+                      </Text>
+                      <Text style={styles.annonceDescription} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                      
+                      <PriceDisplay item={item} />
+                      
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={10} color="#666" />
+                        <Text style={styles.annonceLocation}>{item.utilisateur?.ville || 'Aucune'}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                {chunk.length === 1 && <View style={styles.emptySpace} />}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Full Screen Media Modal */}
+      {renderFullScreenMedia()}
     </View>
   );
-}
+};
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  // Barre de recherche
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    margin: 15,
-    marginBottom: 10,
+    marginHorizontal: 12,
+    marginVertical: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 50,
-    elevation: 4,
-  },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: '#333' },
-  list: { paddingHorizontal: 10, paddingBottom: 30 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  gridCard: {
-    width: CARD_WIDTH,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  mediaWrapper: { position: 'relative', height: 160 },
-  gridImage: { width: '100%', height: '100%' },
-  videoPlaceholder: {
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    paddingVertical: 2,
+  },
+  clearButton: {
+    padding: 5,
+  },
+  searchResultsHeader: {
+    paddingHorizontal: 12,
+    marginBottom: 15,
+  },
+  searchResultsText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  // Sections
+  section: {
+    paddingHorizontal: 12,
+    marginVertical: 15,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginLeft: 6,
+  },
+ 
+  // Loading et erreurs
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 30,
+    marginVertical: 15,
+  },
+  loadingText: {
+    marginTop: 8,
+    color: '#666',
+    fontSize: 14,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: 30,
+    marginVertical: 15,
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 8,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 30,
+    marginVertical: 15,
+    backgroundColor: '#fff',
+    marginHorizontal: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  emptySubtext: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // Grille d'annonces
+  annoncesGrid: {
+    paddingHorizontal: 8,
+    marginBottom: 50,
+  },
+  annonceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  annonceCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 1,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  emptySpace: {
+    width: '48%',
+  },
+  annonceContent: {
+    padding: 8,
+  },
+  annonceTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  annonceDescription: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
+  announcementPrice: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+    marginRight: 6,
+  },
+  announcementPromoPrice: {
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 3,
+    textDecorationLine: 'line-through',
+  },
+  annonceLocation: {
+    fontSize: 10,
+    color: '#666',
+    marginLeft: 3,
+  },
+  // Styles médias
+  mediaContainer: {
+    position: 'relative',
+  },
+  mediaTouchable: {
+    flex: 1,
+  },
+  announcementImage: {
+    width: '100%',
+    height: 90,
+  },
+  imageGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 40,
+  },
+  videoIndicator: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  videoIndicatorText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+    marginLeft: 3,
+  },
+  videoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  mediaIndicator: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  mediaIndicatorText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  navButton: {
+    position: 'absolute',
+    top: '50%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -13,
+  },
+  prevButton: {
+    left: 6,
+  },
+  nextButton: {
+    right: 6,
+  },
+  promoBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: '#FF4444',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  promoBadgeText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  noMediaContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e9ecef',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 12,
+  },
+  noMediaTextSmall: {
+    fontSize: 8,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  // Styles plein écran
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  videoText: { color: '#fff', marginTop: 8, fontSize: 12, fontWeight: 'bold' },
-  gradient: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 70 },
-  promoBadge: { position: 'absolute', top: 10, left: 10, backgroundColor: '#e74c3c', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
-  promoText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  mediaCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
-  mediaCountText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  gridContent: { padding: 10 },
-  gridTitle: { fontSize: 13.5, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' },
-  promoPrice: { fontSize: 15, fontWeight: 'bold', color: '#FF6B00', marginRight: 6 },
-  oldPrice: { fontSize: 12, color: '#999', textDecorationLine: 'line-through' },
-  normalPrice: { fontSize: 15, fontWeight: 'bold', color: '#FF6B00' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 8 },
-  stat: { flexDirection: 'row', alignItems: 'center' },
-  statText: { fontSize: 11, color: '#888', marginLeft: 4 },
-  actionsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 8 },
-  callBtn: { padding: 8, backgroundColor: '#e3f2fd', borderRadius: 20 },
-  whatsappBtn: { padding: 8, backgroundColor: '#e8f5e9', borderRadius: 20 },
-
-  fullScreen: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
-  closeBtn: { position: 'absolute', top: 40, right: 20, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 30 },
-  fullMedia: { width: '100%', height: '100%' },
-  navBtn: { position: 'absolute', top: '50%', backgroundColor: 'rgba(0,0,0,0.5)', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginTop: -30 },
-  prev: { left: 20 },
-  next: { right: 20 },
-  counter: { position: 'absolute', top: 50, left: 20, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  counterText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 15, fontSize: 16, color: '#666' },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyText: { marginTop: 20, fontSize: 17, color: '#999', textAlign: 'center' },
+  closeFullScreenButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1000,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    padding: 5,
+  },
+  fullScreenMediaContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+  fullScreenVideo: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+  fullScreenIndicator: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  fullScreenIndicatorText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  fullScreenNavButton: {
+    position: 'absolute',
+    top: '50%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -25,
+  },
+  fullScreenPrevButton: {
+    left: 20,
+  },
+  fullScreenNextButton: {
+    right: 20,
+  },
+  fullScreenVideoIndicator: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  fullScreenVideoIndicatorText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  // Styles type annonce
+  sectionTitle:{
+    marginBottom: 12,
+    fontSize: 18,
+  },
+  typecontainer: {
+    marginVertical: 10,
+    marginHorizontal: 8,
+  },
+  typebox: {
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    elevation: 2,
+  },
+  typeText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  typeboxSelected: {
+    backgroundColor: '#FF6B00',
+    borderColor: '#FF6B00',
+  },
+  typeTextSelected: {
+    color: '#ffffff',
+  },
 });
+
+export default Menu;

@@ -20,6 +20,22 @@ export default function AjoutAnnonce() {
   const [showMainModal, setShowMainModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [typeannonce, setTypeAnnonce] = useState([]);
+  const [selectedTypeAnnonce, setSelectedTypeAnnonce] = useState('');
+
+  // Liste des type annonces
+  useEffect(() => {
+    getTypeAnnonce();
+  }, []);
+
+  const getTypeAnnonce = async () => {
+   
+      const response = await fetch('https://epencia.net/app/souangah/annonce/type-annonce.php');
+      const result = await response.json();
+      setTypeAnnonce(result);
+      
+   
+  };
 
   useEffect(() => {
     Id_Annonce(generateId());
@@ -40,9 +56,26 @@ export default function AjoutAnnonce() {
     setPrice(numericValue);
   };
 
+  // CORRECTION DE L'ERREUR ICI
   const displayFormattedPrice = (price) => {
     if (!price) return '0';
-    return parseInt(price).toLocaleString('fr-FR');
+    
+    // Vérifier que price est une chaîne de caractères
+    const priceStr = String(price);
+    
+    // Supprimer les caractères non numériques
+    const numericValue = priceStr.replace(/[^0-9]/g, '');
+    
+    // Convertir en nombre
+    const numericPrice = parseInt(numericValue);
+    
+    // Vérifier si c'est un nombre valide
+    if (isNaN(numericPrice)) {
+      return '0';
+    }
+    
+    // Formater le nombre
+    return numericPrice.toLocaleString('fr-FR');
   };
 
   // Vérifier si on peut ajouter plus de médias
@@ -180,7 +213,7 @@ export default function AjoutAnnonce() {
   };
 
   const validerAnnonce = async () => {
-    if (!titre || !description || !prix_normal || !prix_promo || medias.length === 0) {
+    if (!titre || !description || !prix_normal || !prix_promo || medias.length === 0 || !selectedTypeAnnonce) {
       Alert.alert('Champs manquants', 'Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -195,6 +228,7 @@ export default function AjoutAnnonce() {
     formData.append("audience", audience);
     formData.append("prix_annonce", prix_annonce);
     formData.append("telephone", telephone);
+    formData.append("code_type", selectedTypeAnnonce);
 
     // Ajouter tous les médias
     medias.forEach((media, index) => {
@@ -233,6 +267,8 @@ export default function AjoutAnnonce() {
       Id_Annonce(generateId());
       setAudience('');
       calculerPrixDepuisAudience('');
+      setSelectedTypeAnnonce('');
+      setTelephone('');
     } catch (error) {
       Alert.alert('Erreur', error.toString());
     }
@@ -430,9 +466,9 @@ export default function AjoutAnnonce() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.titre}>Creer une annonce</Text>
+      <Text style={styles.titre}>Créer une annonce</Text>
 
-            <View style={styles.section}>
+      <View style={styles.section}>
         <View style={styles.mediaHeader}>
           <Text style={styles.label}>Ajouter des (Images et Vidéos)</Text>
           <Text style={styles.mediaCounter}>
@@ -486,18 +522,55 @@ export default function AjoutAnnonce() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Numéro Whatssap</Text>
+        <Text style={styles.label}>Type d'annonce*</Text>
+        
+        {typeannonce && Array.isArray(typeannonce) && typeannonce.length > 0 ? (
+          <View style={styles.typeAnnonceContainer}>
+            {typeannonce.map((type, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.typeAnnonceButton,
+                  selectedTypeAnnonce === type.code_type ? styles.typeAnnonceButtonSelected : styles.typeAnnonceButtonNormal
+                ]}
+                onPress={() => setSelectedTypeAnnonce(type.code_type)}
+              >
+                <Text 
+                  style={[
+                    styles.typeAnnonceButtonText,
+                    selectedTypeAnnonce === type.code_type ? styles.typeAnnonceButtonTextSelected : styles.typeAnnonceButtonTextNormal
+                  ]}
+                >
+                  {type.libelle_annonce}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noTypeText}>Chargement des types d'annonce...</Text>
+        )}
+        
+        {selectedTypeAnnonce && (
+          <Text style={styles.selectedTypeText}>
+            Type sélectionné: {typeannonce.find(t => t.code_type === selectedTypeAnnonce)?.libelle_annonce || ''}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Numéro WhatsApp</Text>
         <TextInput
-        style={styles.input}
-        placeholder='entrer votre numero whatsap'
-        value={telephone}
-        onChangeText={setTelephone}
+          style={styles.input}
+          placeholder='Entrer votre numéro WhatsApp'
+          value={telephone}
+          onChangeText={setTelephone}
+          keyboardType="phone-pad"
         />
       </View>
 
       <View style={styles.row}>
         <View style={styles.section}>
-          <Text style={styles.label}>Prix Normal</Text>
+          <Text style={styles.label}>Prix Normal*</Text>
           <TextInput
             style={styles.input}
             value={prix_normal}
@@ -505,10 +578,15 @@ export default function AjoutAnnonce() {
             placeholder="Entrez le prix normal"
             keyboardType="numeric"
           />
+          {prix_normal && (
+            <Text style={styles.formattedPrice}>
+              {displayFormattedPrice(prix_normal)} FCFA
+            </Text>
+          )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Prix Promotionnel</Text>
+          <Text style={styles.label}>Prix Promotionnel*</Text>
           <TextInput
             style={styles.input}
             value={prix_promo}
@@ -516,18 +594,21 @@ export default function AjoutAnnonce() {
             placeholder="Entrez le prix promo"
             keyboardType="numeric"
           />
+          {prix_promo && (
+            <Text style={styles.formattedPrice}>
+              {displayFormattedPrice(prix_promo)} FCFA
+            </Text>
+          )}
         </View>
       </View>
 
       {prix_normal && prix_promo && (
         <View style={styles.section}>
           <Text style={styles.discountText}>
-            Réduction: {Math.round(((prix_normal - prix_promo) / prix_normal) * 100)}%
+            Réduction: {Math.round(((parseInt(prix_normal) - parseInt(prix_promo)) / parseInt(prix_normal)) * 100)}%
           </Text>
         </View>
       )}
-
-
 
       <View style={styles.section}>
         <Text style={styles.label}>Audience*</Text>
@@ -549,14 +630,18 @@ export default function AjoutAnnonce() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Prix*</Text>
+        <Text style={styles.label}>Prix à payer*</Text>
         <TextInput
           style={styles.input}
           placeholder="Prix à payer pour publier"
-          value={prix_annonce}
+          value={displayFormattedPrice(prix_annonce)}
           editable={false}
-          keyboardType='numeric'
         />
+        {prix_annonce && (
+          <Text style={styles.priceDetails}>
+            {audience ? `${audience} personnes × 30 FCFA = ${displayFormattedPrice(prix_annonce)} FCFA` : ''}
+          </Text>
+        )}
       </View>
 
       <TouchableOpacity style={styles.validerButton} onPress={validerAnnonce}>
@@ -577,6 +662,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     backgroundColor: '#f5f5f5',
+    marginTop: 30,
   },
   titre: {
     fontSize: 24,
@@ -612,6 +698,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
+  },
+  formattedPrice: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  priceDetails: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+    fontStyle: 'italic',
   },
   mediaHeader: {
     flexDirection: 'row',
@@ -754,7 +852,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   validerButton: {
-    backgroundColor: '#000000ff',
+    backgroundColor: '#000000',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -781,6 +879,53 @@ const styles = StyleSheet.create({
   picker: {
     height: 60,
     width: '100%',
+  },
+  // Styles pour les types d'annonce
+  typeAnnonceContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 5,
+  },
+  typeAnnonceButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  typeAnnonceButtonNormal: {
+    backgroundColor: 'white',
+    borderColor: '#ddd',
+  },
+  typeAnnonceButtonSelected: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  typeAnnonceButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  typeAnnonceButtonTextNormal: {
+    color: '#333',
+  },
+  typeAnnonceButtonTextSelected: {
+    color: 'white',
+  },
+  noTypeText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 10,
+  },
+  selectedTypeText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '600',
+    marginTop: 10,
+    textAlign: 'center',
   },
   // Styles pour les modals
   modalOverlay: {

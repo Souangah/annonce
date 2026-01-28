@@ -13,58 +13,54 @@ export default function Parametre({ navigation }) {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.welcome}>Bienvenue</Text>
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{user?.nom_prenom || 'Invité'}</Text>
-          <Text style={styles.userName}>{user?.telephone || 'Invité'}</Text>
-        </View>
+        <Text style={styles.welcome}>Paramètres</Text>
       </View>
 
       <View style={styles.menu}>
         <MenuItem
-          icon={<Ionicons name="person-outline" size={28} color="#5E72E4" />}
+          icon={<Ionicons name="person-outline" size={22} color="#5E72E4" />}
           label="Information de compte"
           onPress={() => navigation.navigate('ProfilUtilisateur')}
         />
 
-           <MenuItem
-            icon={<Ionicons name="add-circle-outline" size={28} color="#5E72E4" />}
-            label="Publier une annonce"
-            onPress={() => navigation.navigate('AjouterAnnonce')}
-            />
+        <MenuItem
+          icon={<Ionicons name="add-circle-outline" size={22} color="#5E72E4" />}
+          label="Publier une annonce"
+          onPress={() => navigation.navigate('AjouterAnnonce')}
+        />
 
-            <MenuItem
-            icon={<MaterialCommunityIcons name="credit-card-plus-outline" size={28} color="#5E72E4" />}
-            label="Rechargement"
-            onPress={() => navigation.navigate('Rechargement')}
-            />
+        <MenuItem
+          icon={<MaterialCommunityIcons name="credit-card-plus-outline" size={22} color="#5E72E4" />}
+          label="Rechargement"
+          onPress={() => navigation.navigate('Rechargement')}
+        />
 
-         <MenuItem
-          icon={<FontAwesome name="money" size={28} color="#5E72E4" />}
+        <MenuItem
+          icon={<FontAwesome name="money" size={22} color="#5E72E4" />}
           label="Retrait"
           onPress={() => navigation.navigate('Retrait')}
         />
 
         <MenuItem
-          icon={<Ionicons name="earth-outline" size={28} color="#5E72E4" />}
+          icon={<Ionicons name="earth-outline" size={22} color="#5E72E4" />}
           label="Toutes les annonces"
           onPress={() => navigation.navigate('ListeAnnonces')}
         />
 
         <MenuItem
-           icon={<MaterialCommunityIcons name="format-list-bulleted" size={28} color="#5E72E4" />}
-           label="Mes annonces"
-           onPress={() => navigation.navigate('AnnonceUtilisateur')}
-         />
+          icon={<MaterialCommunityIcons name="format-list-bulleted" size={22} color="#5E72E4" />}
+          label="Mes annonces"
+          onPress={() => navigation.navigate('AnnonceUtilisateur')}
+        />
 
         <MenuItem
-          icon={<FontAwesome5 name="headset" size={28} color="#5E72E4" />}
+          icon={<FontAwesome5 name="headset" size={22} color="#5E72E4" />}
           label="Service client"
           onPress={() => navigation.navigate('Service')}
         />
 
         <MenuItem
-          icon={<Feather name="file-text" size={28} color="#5E72E4" />}
+          icon={<Feather name="file-text" size={22} color="#5E72E4" />}
           label="Termes et conditions"
           onPress={() => navigation.navigate('Termes')}
         />
@@ -76,7 +72,7 @@ export default function Parametre({ navigation }) {
         activeOpacity={0.9}
       >
         <View style={styles.logoutContent}>
-          <Ionicons name="log-out-outline" size={28} color="#fff" />
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
           <Text style={styles.logoutText}>Déconnexion</Text>
         </View>
       </TouchableOpacity>
@@ -95,7 +91,7 @@ function MenuItem({ icon, label, onPress }) {
         {icon}
       </View>
       <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+      <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
     </TouchableOpacity>
   );
 }
@@ -106,80 +102,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 30,
   },
   header: {
-    marginBottom: 10,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    marginBottom: 8,
+    paddingBottom: 8,
   },
   welcome: {
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1E293B',
-    marginBottom: 6,
-  },
-  userInfo: {
-    marginTop: 10,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  phone: {
-    fontSize: 15,
-    color: '#64748B',
-    marginTop: 4,
   },
   menu: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   menuItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 15,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    marginBottom: 8,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 1.5,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#F1F5F9',
   },
   menuIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     backgroundColor: '#E0E7FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   menuLabel: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: '#1E293B',
     fontWeight: '500',
   },
   logoutButton: {
     backgroundColor: '#1E293B',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginTop: 10,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginTop: 8,
   },
   logoutContent: {
     flexDirection: 'row',
@@ -187,9 +157,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginLeft: 10,
+    marginLeft: 8,
   },
 });
