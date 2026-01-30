@@ -45,7 +45,7 @@
     },
     "owner": "souangah",
      "notification": {
-      "icon": "./assets/favicon.png",
+      "icon": "./assets/ic_notification.png",
       "color": "#ffffff"
     }
 

@@ -4,7 +4,8 @@ import { GlobalContext } from '../config/GlobalUser';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Connexion({ navigation }) {
+export default function Connexion({ navigation, route }) {
+  const { redirectTo, redirectParams } = route.params || {};
   const [telephone, setTelephone] = useState('');
   const [mdp, setMdp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +35,12 @@ export default function Connexion({ navigation }) {
         if (result[0].user_id) {
           await AsyncStorage.setItem('matricule', result[0].user_id);
         }
-        navigation.navigate('MenuTabs');
+        // 🔁 REDIRECTION INTELLIGENTE
+  if (redirectTo) {
+    navigation.replace(redirectTo, redirectParams);
+  } else {
+    navigation.replace('MenuTabs');
+  }
       } else {
         Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
       }

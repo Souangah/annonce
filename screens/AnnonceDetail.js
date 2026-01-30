@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Dimensions, Modal, StatusBar } from 'react-native';
+import React, { useState, useRef, useContext } from 'react';
+import { View, Text, Image, ScrollView,Linking, StyleSheet, TouchableOpacity, Dimensions, Modal, StatusBar, Alert } from 'react-native';
 import { Video } from 'expo-av';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GlobalContext } from '../config/GlobalUser';
 
 const AnnonceDetail = ({ route, navigation }) => {
   const { annonce } = route.params;
@@ -10,6 +11,7 @@ const AnnonceDetail = ({ route, navigation }) => {
   const [fullScreenMedia, setFullScreenMedia] = useState(null);
   const [playingVideos, setPlayingVideos] = useState({});
   const videoRefs = useRef({});
+  const[user] = useContext(GlobalContext);
 
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -406,6 +408,56 @@ const AnnonceDetail = ({ route, navigation }) => {
     );
   };
 
+  const Contacter = () => {
+    // verifier si l'utilisateur est connnecter
+    if(!user){
+      Alert.alert(
+        'connexion requise',
+        'Veillez vous connecter pour contacter le vendeur',
+        [
+          { text: 'Annuler', style: 'cancel'},
+          { text : 'Se connecter', 
+            onPress: () =>
+                navigation.navigate('Connexion', {
+                  redirectTo: 'AnnonceDetail',
+                  redirectParams: { annonce },
+  }),
+
+          },
+        ]
+      );
+      return;
+    }
+
+      //  Vérifier si numéro existe
+  const phone = annonce.utilisateur?.telephone;
+  if (!phone) {
+    Alert.alert('Erreur', 'Numéro du vendeur indisponible');
+    return;
+  }
+
+
+   // Nettoyage + indicatif CI 🇨🇮
+  let formattedPhone = phone.replace(/\D/g, '');
+  if (!formattedPhone.startsWith('225')) {
+    formattedPhone = '225' + formattedPhone;
+  }
+
+  // message
+  const message = `Salut,je suis interressé par votre annonce: ${annonce.titre}.
+  Est-elle toujours disponible ?`;
+  // encoder le message
+  const encodeMessage = encodeURIComponent(message);
+
+  // Lien WhatsApp
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeMessage}`;
+
+  Linking.openURL(whatsappUrl).catch(() => {
+    Alert.alert('Erreur', "Impossible d'ouvrir WhatsApp");
+  });
+
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -513,8 +565,8 @@ const AnnonceDetail = ({ route, navigation }) => {
       </ScrollView>
 
       {/* Bouton contacter */}
-      <TouchableOpacity style={styles.contactButton}>
-        <Ionicons name="chatbubble-ellipses" size={16} color="white" />
+      <TouchableOpacity style={styles.contactButton} onPress={Contacter}>
+        <FontAwesome name="whatsapp" size={24} color="#ffffff" />
         <Text style={styles.contactButtonText}>Contacter</Text>
       </TouchableOpacity>
 
@@ -823,10 +875,10 @@ const styles = StyleSheet.create({
   },
   contactButton: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 35,
     left: 12,
     right: 12,
-    backgroundColor: '#21a403',
+    backgroundColor: '#007AFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -21,6 +21,28 @@ const Menu = ({navigation}) => {
 
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+  const sliderImages = [
+  require('../assets/images/yeb1.png'),
+  require('../assets/images/yeb3.png'),
+];
+
+const sliderRef = useRef(null);
+let sliderIndex = 0;
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    sliderIndex = (sliderIndex + 1) % sliderImages.length;
+
+    sliderRef.current?.scrollTo({
+      x: sliderIndex * screenWidth,
+      animated: true,
+    });
+  }, 3000); // 3 secondes
+
+  return () => clearInterval(interval);
+}, []);
+
+
   // liste des type annonces
 
   useEffect(() => {
@@ -523,6 +545,23 @@ const Menu = ({navigation}) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.imageContainer}>
+  <ScrollView
+    ref={sliderRef}
+    horizontal
+    pagingEnabled
+    showsHorizontalScrollIndicator={false}
+  >
+    {sliderImages.map((img, index) => (
+      <Image
+        key={index}
+        source={img}
+        style={[styles.imageCard, { width: screenWidth - 20 }]}
+      />
+    ))}
+  </ScrollView>
+</View>
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Barre de recherche */}
         <View style={styles.searchContainer}>
@@ -554,7 +593,7 @@ const Menu = ({navigation}) => {
         {/* la liste des type annonce*/}
 
         <View style={styles.typecontainer}>
-          <Text style={styles.sectionTitle}>Types d'annonces</Text>
+          <Text style={styles.sectionTitle}>Categories annonces</Text>
           <FlatList
           data={typeannonce}
           horizontal={true}
@@ -685,6 +724,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  imageContainer:{
+    margin:10,
+    overflow: 'hidden',
+  },
+  imageCard: {
+    height: 215,
+    width: 340,
+    borderRadius: 6,
   },
   scrollView: {
     flex: 1,

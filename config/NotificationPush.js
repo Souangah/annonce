@@ -44,7 +44,7 @@ export default function NotificationPush() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          utilisateur_id: id,
+          user_id: id,
           push_token: token,
         }),
       });

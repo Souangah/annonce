@@ -40,7 +40,7 @@ export default function NouveauUtilisateur({ navigation }) {
       return;
     }
 
-    if (!/^\d{4}$/.test(mdp)) {
+    if (!/^\d{6}$/.test(mdp)) {
       Alert.alert('Erreur', 'Le mot de passe doit contenir exactement 4 chiffres.');
       return;
     }
@@ -182,7 +182,7 @@ export default function NouveauUtilisateur({ navigation }) {
                   placeholder=" 6 chiffres"
                   placeholderTextColor="#94a3b8"
                   secureTextEntry={!showPassword}
-                  maxLength={4}
+                  maxLength={6}
                   keyboardType="number-pad"
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField(null)}

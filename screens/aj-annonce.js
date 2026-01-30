@@ -522,7 +522,7 @@ export default function AjoutAnnonce() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Type d'annonce*</Text>
+        <Text style={styles.label}>choisissez une categorie*</Text>
         
         {typeannonce && Array.isArray(typeannonce) && typeannonce.length > 0 ? (
           <View style={styles.typeAnnonceContainer}>
@@ -621,7 +621,7 @@ export default function AjoutAnnonce() {
             }}
             style={styles.picker}
           >
-            <Picker.Item label="1 à 3 personnes" value="3" />
+            <Picker.Item label="1 à 3 personnes" value="2" />
             <Picker.Item label="1 à 10 personnes" value="10" />
             <Picker.Item label="1 à 50 personnes" value="50" />
             <Picker.Item label="1 à 100 personnes" value="100" />

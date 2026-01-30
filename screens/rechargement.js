@@ -1,14 +1,26 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+  Linking,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
 
 export default function Rechargement({ navigation }) {
   const [montant, setMontant] = useState('');
   const [numero, setNumero] = useState('');
-  const [user, setUser] = useContext(GlobalContext);
+  const [loading, setLoading] = useState(false);
+  const [user] = useContext(GlobalContext);
 
-  const RechargeMoi = () => {
+  const RechargeMoi = async () => {
+    // 🔐 Validations
     if (!montant || isNaN(montant) || Number(montant) <= 0) {
       Alert.alert('Erreur', 'Veuillez entrer un montant valide.');
       return;
@@ -19,22 +31,61 @@ export default function Rechargement({ navigation }) {
       return;
     }
 
-    const nouveauSolde = Number(user.solde || 0) + Number(montant);
-    setUser({ ...user, solde: nouveauSolde });
+    if (!user?.user_id) {
+      Alert.alert('Erreur', 'Utilisateur non identifié.');
+      return;
+    }
 
-    Alert.alert(
-      'Succès',
-      `Recharge de ${montant} FCFA sur le numéro ${numero} effectuée avec succès.`
-    );
+    setLoading(true);
 
-    navigation.goBack();
+    try {
+      // 📦 Payload conforme à l’API PHP
+      const payload = {
+        user_id: user.user_id,                 // 🔥 vient de la base
+        MontantEnvoye: parseFloat(montant),    // 🔥 du formulaire
+        MontantRecu: parseFloat(montant),      // 🔥 idem (frais à gérer côté PHP)
+        telephone: numero                      // 🔥 numéro Wave
+      };
+
+      console.log('Payload envoyé :', payload);
+
+      const response = await fetch(
+        'https://epencia.net/app/souangah/annonce/rechargement.php',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+      console.log('Réponse API :', result);
+
+      // 🌊 Redirection Wave
+      if (result.wave_launch_url) {
+        Linking.openURL(result.wave_launch_url);
+      }
+      // ❌ Erreur backend
+      else if (result.error) {
+        Alert.alert('Erreur', result.error);
+      }
+      // ⚠️ Réponse inconnue
+      else {
+        Alert.alert('Erreur', 'Réponse inattendue du serveur.');
+      }
+
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de contacter le serveur.');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Logo Wave affiché au centre */}
       <Image
-        source={require('../assets/images/wave.png')} // ✅ chemin relatif correct
+        source={require('../assets/images/wave.png')}
         style={styles.logo}
       />
 
@@ -48,7 +99,7 @@ export default function Rechargement({ navigation }) {
         onChangeText={setNumero}
       />
 
-      <Text style={styles.label}>Montant à recharger</Text>
+      <Text style={styles.label}>Montant à recharger (FCFA)</Text>
       <TextInput
         style={styles.input}
         placeholder="Ex: 1000"
@@ -57,9 +108,19 @@ export default function Rechargement({ navigation }) {
         onChangeText={setMontant}
       />
 
-      <TouchableOpacity style={styles.button} onPress={RechargeMoi}>
-        <Ionicons name="wallet" size={20} color="#fff" style={{ marginRight: 8 }} />
-        <Text style={styles.buttonText}>Valider le rechargement</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={RechargeMoi}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <>
+            <Ionicons name="wallet" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>Payer avec Wave</Text>
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -78,14 +139,15 @@ const styles = StyleSheet.create({
     height: 200,
     marginBottom: 30,
     resizeMode: 'contain',
-    marginTop: -100,
+    marginTop: -50,
   },
   label: {
-    fontSize: 18,
-    marginBottom: 6,
+    fontSize: 16,
+    marginBottom: 8,
     fontWeight: '500',
     color: '#333',
     alignSelf: 'flex-start',
+    width: '100%',
   },
   input: {
     width: '100%',
@@ -93,24 +155,27 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 16,
-    marginBottom: 15,
+    marginBottom: 20,
     backgroundColor: '#fff',
   },
   button: {
     backgroundColor: '#2196F3',
-    paddingVertical: 14,
+    paddingVertical: 15,
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
-    paddingHorizontal: 20,
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#90CAF9',
   },
 });

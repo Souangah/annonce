@@ -140,12 +140,19 @@ export default function MenuTabs({ navigation }) {
               <Text style={styles.footersolde}>{user?.solde || 0} FCFA</Text>
             </View>
            
-            <TouchableOpacity
-              onPress={() => navigation.navigate('MenuSolde')}
-              style={styles.iconButton}
-            >
-              <Ionicons name="wallet-outline" size={22} color="#000000" />
-            </TouchableOpacity>
+            <TouchableOpacity 
+                onPress={() => navigation.navigate('Notification')}
+                style={styles.notificationButton}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#000000" />
+                {count > 0 && (
+                  <View style={styles.badgeContainer}>
+                    <Text style={styles.badgeText}>
+                      {count > 99 ? '99+' : count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             
             <TouchableOpacity
               onPress={() => navigation.navigate('Connexion')}
@@ -227,8 +234,8 @@ export default function MenuTabs({ navigation }) {
             style={styles.buttonpublier}
             onPress={() => navigation.navigate('AjouterAnnonce')}
           >
-            <Ionicons name='add' size={20} color='white' />
-            <Text style={styles.textbutton}>Publier</Text>
+            <Ionicons name='add' size={30} color='white' />
+            <Text style={styles.textbutton}>publier</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -283,15 +290,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#ed720dff',
+    borderColor: '#6366f1',
   },
   authButtonText: {
-    color: '#ed720dff',
+    color: '#6366f1',
     fontSize: 12,
     fontWeight: '500',
   },
   inscriptionButton: {
-    backgroundColor: '#ed720dff',
+    backgroundColor: '#6366f1',
   },
   inscriptionButtonText: {
     color: '#fff',
@@ -340,7 +347,7 @@ buttonpublier: {
 
   textbutton: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
   },
