@@ -23,6 +23,7 @@ import AnnonceFavoris from '../screens/annonce-favoris';
 import AnnoncesProfil from '../screens/annonce-profil';
 import AnnonceDetail from '../screens/AnnonceDetail';
 import ModifierProfil from '../screens/modifier-profil';
+import Abonnement from '../screens/abonnement';
 
 
 
@@ -42,21 +43,22 @@ export default function Router() {
         <Stack.Screen name="Menu" component={Menu} options={{ headerShown: false }}/>
         <Stack.Screen name="AjouterAnnonce" component={AjoutAnnonce} />
         <Stack.Screen name="ListeAnnonces" component={ListeAnnonces} />
-         <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
-         <Stack.Screen name="Accueil" component={Accueil} />
-         <Stack.Screen name="Details d'annonce" component={DetailsAnnonce} />
-         <Stack.Screen name="AnnonceUtilisateur" component={AnnonceUtilisateur} />
-         <Stack.Screen name="Rechargement" component={Rechargement} />
-         <Stack.Screen name="Retrait" component={Retrait} />
-          <Stack.Screen name="Parametre" component={Parametre} />
-          <Stack.Screen name="Plus" component={Plus} />
-           <Stack.Screen name="Service" component={Service} />
-           <Stack.Screen name="Notification" component={Notification} options={{headerShown: false}} /> 
-           <Stack.Screen name="MenuTabs" component={MenuTabs} />
-           <Stack.Screen name="AnnonceFavoris" component={AnnonceFavoris} />
-           <Stack.Screen name="AnnoncesProfil" component={AnnoncesProfil} />
-           <Stack.Screen name="AnnonceDetail" component={AnnonceDetail} />
-           <Stack.Screen name="Modifier le profil" component={ModifierProfil} />
+        <Stack.Screen name="ProfilUtilisateur" component={ProfilUtilisateur} />
+        <Stack.Screen name="Accueil" component={Accueil} />
+        <Stack.Screen name="Details d'annonce" component={DetailsAnnonce} />
+        <Stack.Screen name="AnnonceUtilisateur" component={AnnonceUtilisateur} />
+        <Stack.Screen name="Rechargement" component={Rechargement} />
+        <Stack.Screen name="Retrait" component={Retrait} />
+        <Stack.Screen name="Parametre" component={Parametre} />
+        <Stack.Screen name="Plus" component={Plus} />
+        <Stack.Screen name="Service" component={Service} />
+        <Stack.Screen name="Notification" component={Notification} options={{headerShown: false}} /> 
+        <Stack.Screen name="MenuTabs" component={MenuTabs} />
+        <Stack.Screen name="AnnonceFavoris" component={AnnonceFavoris} />
+        <Stack.Screen name="AnnoncesProfil" component={AnnoncesProfil} />
+        <Stack.Screen name="AnnonceDetail" component={AnnonceDetail} />
+        <Stack.Screen name="Modifier le profil" component={ModifierProfil} />
+        <Stack.Screen name="Abonnement" component ={Abonnement} options={{headerShown: true}}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -68,7 +68,7 @@ const Menu = ({navigation}) => {
       if (Array.isArray(result)) {
         setListe(result);
         setFilteredListe(result);
-        console.log('Annonces chargées:', result.length);
+     
       } else {
         console.warn('Structure de données inattendue:', result);
         setListe([]);
@@ -309,7 +309,7 @@ const Menu = ({navigation}) => {
             {/* Promotion badge */}
             {hasPromotion(item) && (
               <View style={styles.promoBadge}>
-                <Text style={styles.promoBadgeText}>PROMO</Text>
+                <Text style={styles.promoBadgeText}>{item.libelle_annonce}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -597,7 +597,7 @@ const Menu = ({navigation}) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>Annonces</Text>
+              <Text style={styles.sectionTitle}>Annonces ({filteredListe.length})</Text>
             </View>
           </View>
         </View>
@@ -651,12 +651,14 @@ const Menu = ({navigation}) => {
                         {item.description}
                       </Text>
                       
+                      
                       <PriceDisplay item={item} />
                       
                       <View style={styles.locationContainer}>
                         <Ionicons name="location-outline" size={10} color="#666" />
                         <Text style={styles.annonceLocation}>{item.utilisateur?.ville || 'Aucune'}</Text>
                       </View>
+                      
                     </View>
                   </TouchableOpacity>
                 ))}

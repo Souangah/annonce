@@ -215,6 +215,16 @@ export default function AnnonceUtilisateur({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>
+          Vendez plus vite et{'\n'} 
+          gagnez plus grâce {'\n'} 
+          à nos abonnements
+          </Text>
+        <TouchableOpacity style={styles.headerbtn} onPress={() => navigation.navigate('Abonnement')}>
+          <Text style={styles.btnText}>Découvrir</Text>
+        </TouchableOpacity>
+      </View>
       {/* Recherche */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -317,6 +327,32 @@ const styles = StyleSheet.create({
     height: 50,
     elevation: 4,
   },
+  header: {
+    flexDirection : 'row',
+   justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 6,
+    marginHorizontal: 22,
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    fontWeight: '800',
+    elevation: 3,
+  },
+  headerText : {
+    fontSize: 15,
+  },
+  headerbtn :{
+    borderRadius: 10,
+    backgroundColor: '#0c72d1',
+  },
+  btnText: {
+    marginVertical: 8,
+    marginHorizontal: 16,
+    fontSize: 15,
+    color: 'white',
+  },
+  
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16, color: '#333' },
   gridList: { paddingHorizontal: 10, paddingBottom: 20 },

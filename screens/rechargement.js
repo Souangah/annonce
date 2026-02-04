@@ -15,72 +15,57 @@ import { GlobalContext } from '../config/GlobalUser';
 
 export default function Rechargement({ navigation }) {
   const [montant, setMontant] = useState('');
-  const [numero, setNumero] = useState('');
+  const [telephone, setTelephone] = useState('');
   const [loading, setLoading] = useState(false);
   const [user] = useContext(GlobalContext);
 
-  const RechargeMoi = async () => {
-    // 🔐 Validations
-    if (!montant || isNaN(montant) || Number(montant) <= 0) {
-      Alert.alert('Erreur', 'Veuillez entrer un montant valide.');
-      return;
+ const RechargeMoi = async () => {
+  if (!montant || isNaN(montant) || Number(montant) <= 0) {
+    Alert.alert('Erreur', 'Veuillez entrer un montant valide.');
+    return;
+  }
+
+  if (!telephone || telephone.length < 8) {
+    Alert.alert('Erreur', 'Veuillez entrer un numéro valide.');
+    return;
+  }
+
+  if (!user?.user_id) {
+    Alert.alert('Erreur', 'Utilisateur non identifié.');
+    return;
+  }
+
+  setLoading(true);
+
+  const formData = new FormData();
+  formData.append("telephone", telephone);
+  formData.append("montant", montant);
+  formData.append("user_id", user.user_id);
+
+  try {
+    const response = await fetch('https://epencia.net/app/souangah/annonce/rechargement.php', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (result.wave_launch_url) {
+      Linking.openURL(result.wave_launch_url);   // 🔥 redirection Wave
+    } else if (result.error) {
+      Alert.alert("Erreur", result.error);
+    } else {
+      Alert.alert("Erreur", "Réponse inattendue du serveur");
     }
 
-    if (!numero || numero.length < 8) {
-      Alert.alert('Erreur', 'Veuillez entrer un numéro valide.');
-      return;
-    }
+  } catch (error) {
+    console.log(error);
+    Alert.alert('Erreur', 'Impossible de contacter le serveur.');
+  } finally {
+    setLoading(false);
+  }
+};
 
-    if (!user?.user_id) {
-      Alert.alert('Erreur', 'Utilisateur non identifié.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // 📦 Payload conforme à l’API PHP
-      const payload = {
-        user_id: user.user_id,                 // 🔥 vient de la base
-        MontantEnvoye: parseFloat(montant),    // 🔥 du formulaire
-        MontantRecu: parseFloat(montant),      // 🔥 idem (frais à gérer côté PHP)
-        telephone: numero                      // 🔥 numéro Wave
-      };
-
-      console.log('Payload envoyé :', payload);
-
-      const response = await fetch(
-        'https://epencia.net/app/souangah/annonce/rechargement.php',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const result = await response.json();
-      console.log('Réponse API :', result);
-
-      // 🌊 Redirection Wave
-      if (result.wave_launch_url) {
-        Linking.openURL(result.wave_launch_url);
-      }
-      // ❌ Erreur backend
-      else if (result.error) {
-        Alert.alert('Erreur', result.error);
-      }
-      // ⚠️ Réponse inconnue
-      else {
-        Alert.alert('Erreur', 'Réponse inattendue du serveur.');
-      }
-
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible de contacter le serveur.');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -94,9 +79,9 @@ export default function Rechargement({ navigation }) {
         style={styles.input}
         placeholder="Ex: 0700000000"
         keyboardType="phone-pad"
-        value={numero}
+        value={telephone}
         maxLength={10}
-        onChangeText={setNumero}
+        onChangeText={setTelephone}
       />
 
       <Text style={styles.label}>Montant à recharger (FCFA)</Text>

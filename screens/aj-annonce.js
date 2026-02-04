@@ -621,7 +621,7 @@ export default function AjoutAnnonce() {
             }}
             style={styles.picker}
           >
-            <Picker.Item label="1 à 3 personnes" value="2" />
+            <Picker.Item label="1 à 3 personnes" value="4" />
             <Picker.Item label="1 à 10 personnes" value="10" />
             <Picker.Item label="1 à 50 personnes" value="50" />
             <Picker.Item label="1 à 100 personnes" value="100" />

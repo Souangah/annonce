@@ -164,71 +164,70 @@ export default function MenuTabs({ navigation }) {
         </View>
         
         <View style={{ flex: 1 }}>
-        <Tab.Navigator
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => {
-        return (
-      <View style={styles.tabBarStyle}>
-        {/* Première paire */}
-        <View style={styles.tabBarPair}>
-          {props.state.routes.slice(0, 2).map((route, index) => (
-            <TouchableOpacity
-              key={route.key}
-              onPress={() => props.navigation.navigate(route.name)}
-              style={styles.tabBarButton}
-            >
-              <Ionicons
-                name={
-                  route.name === 'Menu'
-                    ? 'home-outline'
-                    : 'ListeAnnonces'
-                    ? 'briefcase-outline'
-                    : 'ellipse-outline'
-                }
-                size={25}
-                color={props.state.index === index ? '#000' : '#888'}
-              />
-              <Text style={styles.tabLabel}>{route.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <Tab.Navigator
+            screenOptions={{ headerShown: false }}
+            tabBar={(props) => {
+              return (
+                <View style={styles.tabBarStyle}>
+                  {/* Première paire */}
+                  <View style={styles.tabBarPair}>
+                    {props.state.routes.slice(0, 2).map((route, index) => (
+                      <TouchableOpacity
+                        key={route.key}
+                        onPress={() => props.navigation.navigate(route.name)}
+                        style={styles.tabBarButton}
+                      >
+                        <Ionicons
+                          name={
+                            route.name === 'Menu'
+                              ? 'home-outline'
+                              : route.name === 'Annonce populaire'
+                              ? 'briefcase-outline'
+                              : 'ellipse-outline'
+                          }
+                          size={25}
+                          color={props.state.index === index ? '#000' : '#888'}
+                        />
+                        <Text style={styles.tabLabel}>{route.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
 
-        {/* Espace central pour “Publier” */}
-        <View style={{ width: 70 }} />
+                  {/* Espace central pour “Publier” */}
+                  <View style={{ width: 70 }} />
 
-        {/* Deuxième paire */}
-        <View style={styles.tabBarPair}>
-          {props.state.routes.slice(2).map((route, index) => (
-            <TouchableOpacity
-              key={route.key}
-              onPress={() => props.navigation.navigate(route.name)}
-              style={styles.tabBarButton}
-            >
-              <Ionicons
-                name={
-                  route.name === 'AnnonceUtilisateur'
-                    ? 'document-text-outline'
-                    : 'Parametre'
-                    ? 'settings-outline'
-                    : 'ellipse-outline'
-                }
-                size={25}
-                color={props.state.index === index + 2 ? '#000' : '#888'}
-              />
-              <Text style={styles.tabLabel}>{route.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    );
-  }}
->
-      <Tab.Screen name="Menu" component={Menu} />
-      <Tab.Screen name="ListeAnnonces" component={ListeAnnonces} />
-      <Tab.Screen name="AnnonceUtilisateur" component={AnnonceUtilisateur} />
-      <Tab.Screen name="Parametre" component={Parametre} />
-    </Tab.Navigator>
-
+                  {/* Deuxième paire */}
+                  <View style={styles.tabBarPair}>
+                    {props.state.routes.slice(2).map((route, index) => (
+                      <TouchableOpacity
+                        key={route.key}
+                        onPress={() => props.navigation.navigate(route.name)}
+                        style={styles.tabBarButton}
+                      >
+                        <Ionicons
+                          name={
+                            route.name === 'Mes annonces'
+                              ? 'document-text-outline'
+                              : route.name === 'Parametre'
+                              ? 'settings-outline'
+                              : 'ellipse-outline'
+                          }
+                          size={25}
+                          color={props.state.index === index + 2 ? '#000' : '#888'}
+                        />
+                        <Text style={styles.tabLabel}>{route.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              );
+            }}
+          >
+            <Tab.Screen name="Menu" component={Menu} />
+            <Tab.Screen name="Annonce populaire" component={ListeAnnonces} />
+            <Tab.Screen name="Mes annonces" component={AnnonceUtilisateur} />
+            <Tab.Screen name="Parametre" component={Parametre} />
+          </Tab.Navigator>
           
           <TouchableOpacity
             style={styles.buttonpublier}
@@ -303,48 +302,47 @@ const styles = StyleSheet.create({
   inscriptionButtonText: {
     color: '#fff',
   },
- tabBarStyle: {
-  flexDirection: 'row',
-  justifyContent: 'space-between', // espace entre les deux paires
-  alignItems: 'center',
-  paddingHorizontal: 15,
-  height: 50,
-  backgroundColor: '#fff',
-  borderTopWidth: 1,
-  borderTopColor: '#e0e0e0',
-},
-tabBarPair: {
-  flexDirection: 'row',
-  gap: 29, // espace entre boutons de la même paire
-},
-tabBarButton: {
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-tabLabel: {
-  fontSize: 10,
-  color: '#888',
-  marginTop: 2,
-},
-buttonpublier: {
-  position: 'absolute',
-  bottom: 2,
-  alignSelf: 'center',
-  left: '35%',
-  width: 80,
-  height: 80,
-  borderRadius: 80,
-  backgroundColor: '#ed720dff',
-  justifyContent: 'center',
-  alignItems: 'center',
-  elevation: 5,
-  shadowColor: '#000',
-  shadowOpacity: 0.3,
-  shadowRadius: 5,
-  shadowOffset: { width: 0, height: 3 },
-  zIndex: 10,
-},
-
+  tabBarStyle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    height: 50,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  tabBarPair: {
+    flexDirection: 'row',
+    gap: 29,
+  },
+  tabBarButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
+  },
+  buttonpublier: {
+    position: 'absolute',
+    bottom: 2,
+    alignSelf: 'center',
+    left: '38%',
+    width: 80,
+    height: 80,
+    borderRadius: 80,
+    backgroundColor: '#ed720dff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    zIndex: 10,
+  },
   textbutton: {
     color: 'white',
     fontSize: 10,

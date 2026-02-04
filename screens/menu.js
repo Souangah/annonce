@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert, Dimensions, StatusBar, TextInput, FlatList } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Linking, Alert, Dimensions, StatusBar, TextInput, FlatList, RefreshControl } from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +18,18 @@ const Menu = ({navigation}) => {
   const videoRefs = useRef({});
   const [typeannonce, setTypeAnnonce] = useState('');
   const [selectedType, setSelectedType] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  
 
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await getAnnonce();
+    await getTypeAnnonce();
+    setRefreshing(false);
+
+  };
 
   const sliderImages = [
   require('../assets/images/yeb1.png'),
@@ -331,7 +341,7 @@ useEffect(() => {
             {/* Promotion badge */}
             {hasPromotion(item) && (
               <View style={styles.promoBadge}>
-                <Text style={styles.promoBadgeText}>PROMO</Text>
+                <Text style={styles.promoBadgeText}>{item.libelle_annonce}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -546,12 +556,20 @@ useEffect(() => {
   return (
     <View style={styles.container}>
       <View style={styles.imageContainer}>
-  <ScrollView
-    ref={sliderRef}
-    horizontal
-    pagingEnabled
-    showsHorizontalScrollIndicator={false}
-  >
+      <ScrollView
+        ref={sliderRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        refreshControl={
+    <RefreshControl 
+      refreshing={refreshing} 
+      onRefresh={onRefresh} 
+      colors={['#FF6B00']}     // Android
+      tintColor="#FF6B00"      // iOS
+    />
+  }
+      >
     {sliderImages.map((img, index) => (
       <Image
         key={index}
@@ -636,7 +654,7 @@ useEffect(() => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>Annonces</Text>
+              <Text style={styles.sectionTitle}>Annonces ({filteredListe.length})</Text>
             </View>
             {!searchQuery && (
               <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('ListeAnnonces')}>
@@ -777,13 +795,13 @@ const styles = StyleSheet.create({
   // Sections
   section: {
     paddingHorizontal: 12,
-    marginVertical: 15,
+    marginVertical: 5,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 2,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
