@@ -7,10 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Importez vos screens ici
 import Menu from '../screens/menu';
-import ListeAnnonces from '../screens/liste-annonce';
 import AnnonceUtilisateur from '../screens/annonce-utilisateur';
 import Parametre from '../screens/parametre';
-import AnnonceFavoris from '../screens/annonce-favoris';
+import ProfilUtilisateur from '../screens/profil';
 
 const Tab = createBottomTabNavigator();
 
@@ -181,8 +180,8 @@ export default function MenuTabs({ navigation }) {
                           name={
                             route.name === 'Menu'
                               ? 'home-outline'
-                              : route.name === 'Annonce populaire'
-                              ? 'briefcase-outline'
+                              : route.name === 'Mes annonces'
+                              ? 'document-text-outline'
                               : 'ellipse-outline'
                           }
                           size={25}
@@ -193,7 +192,7 @@ export default function MenuTabs({ navigation }) {
                     ))}
                   </View>
 
-                  {/* Espace central pour “Publier” */}
+                  {/* Espace central pour "Publier" */}
                   <View style={{ width: 70 }} />
 
                   {/* Deuxième paire */}
@@ -206,8 +205,8 @@ export default function MenuTabs({ navigation }) {
                       >
                         <Ionicons
                           name={
-                            route.name === 'Mes annonces'
-                              ? 'document-text-outline'
+                            route.name === 'Profil'
+                              ? 'person-outline'
                               : route.name === 'Parametre'
                               ? 'settings-outline'
                               : 'ellipse-outline'
@@ -224,8 +223,8 @@ export default function MenuTabs({ navigation }) {
             }}
           >
             <Tab.Screen name="Menu" component={Menu} />
-            <Tab.Screen name="Annonce populaire" component={ListeAnnonces} />
             <Tab.Screen name="Mes annonces" component={AnnonceUtilisateur} />
+            <Tab.Screen name="Profil" component={ProfilUtilisateur} />
             <Tab.Screen name="Parametre" component={Parametre} />
           </Tab.Navigator>
           

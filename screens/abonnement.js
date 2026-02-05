@@ -8,7 +8,7 @@ export default function Abonnement() {
     const [user, setUser] = useContext(GlobalContext);
     const [loading, setLoading] = useState(false);
 
-    console.log(user.user_id);
+    
 
     const ChangerBoutton = (tab) => {
         setActiveTab(tab);
@@ -93,60 +93,41 @@ export default function Abonnement() {
     };
 
     // Fonction pour envoyer l'abonnement à l'API PHP
-    const saveAbonnementToDatabase = async (abonnementData) => {
-        try {
-            setLoading(true);
-            
-            // URL de votre API PHP - remplacez par votre URL réelle
-            const url = 'https://epencia.net/app/souangah/annonce/abonnement.php';
-            
-            // Création des données FormData comme attendu par votre API
-            const formData = new FormData();
-            formData.append('user_id', abonnementData.user_id);
-            formData.append('type_abonnement', abonnementData.type_abonnement);
-            formData.append('prix', abonnementData.prix);
-            formData.append('duree_jours', abonnementData.duree_jours);
-            formData.append('max_annonces', abonnementData.max_annonce);
-            
-            
-            const response = await fetch(url, {
+  const saveAbonnementToDatabase = async (abonnementData) => {
+    try {
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append('user_id', abonnementData.user_id);
+        formData.append('type_abonnement', abonnementData.type_abonnement);
+        formData.append('prix', abonnementData.prix);
+        formData.append('duree_jours', abonnementData.duree_jours);
+        formData.append('max_annonces', abonnementData.max_annonce);
+
+        const response = await fetch(
+            'https://epencia.net/app/souangah/annonce/abonnement.php', 
+            {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-            
-            const result = await response.json();
-            
-            // Essayer de parser le JSON, sinon utiliser le texte brut
-            let parsedResult;
-            try {
-                parsedResult = JSON.parse(result);
-            } catch (e) {
-                parsedResult = result;
             }
-            
-            if (response.ok) {
-                if (typeof parsedResult === 'string' && parsedResult === 'succes') {
-                    return { success: true, message: 'Abonnement créé avec succès' };
-                } else if (parsedResult.status === 'echec') {
-                    return { success: false, error: parsedResult.message || 'Erreur lors de l\'enregistrement' };
-                } else if (typeof parsedResult === 'string' && parsedResult.includes('parametres manquants')) {
-                    return { success: false, error: 'Paramètres manquants' };
-                } else {
-                    return { success: true, data: parsedResult };
-                }
-            } else {
-                return { success: false, error: 'Erreur serveur' };
-            }
-        } catch (error) {
-            console.error('Erreur:', error);
-            return { success: false, error: 'Erreur de connexion au serveur' };
-        } finally {
-            setLoading(false);
-        }
-    };
+        );
+
+        const result = await response.json();
+
+        // Affiche directement le message envoyé par l'API
+        Alert.alert("Message", result.message);
+
+        return result;
+
+    } catch (error) {
+        console.error('Erreur:', error);
+        Alert.alert("Erreur", "Impossible de se connecter au serveur");
+        return { message: "Erreur de connexion au serveur" };
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     // Fonction pour gérer l'achat
     const handlePurchase = async () => {
@@ -185,26 +166,7 @@ export default function Abonnement() {
                             // Envoyer à l'API
                             const result = await saveAbonnementToDatabase(abonnementData);
                             
-                            if (result.success) {
-                                Alert.alert(
-                                    'Succès',
-                                    `Votre abonnement ${planName} pour ${durationText} a été activé avec succès!`,
-                                    [
-                                        {
-                                            text: 'OK',
-                                            onPress: () => {
-                                                // Mettre à jour le contexte utilisateur si nécessaire
-                                                // setUser({...user, abonnement: planName});
-                                            }
-                                        }
-                                    ]
-                                );
-                            } else {
-                                Alert.alert(
-                                    'Erreur',
-                                    `Une erreur est survenue: ${result.error}\nVeuillez réessayer.`
-                                );
-                            }
+                            
                         } catch (error) {
                             console.error('Erreur complète:', error);
                             Alert.alert(
