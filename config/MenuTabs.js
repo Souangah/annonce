@@ -14,9 +14,43 @@ import ProfilUtilisateur from '../screens/profil';
 const Tab = createBottomTabNavigator();
 
 export default function MenuTabs({ navigation }) {
-  const [user] = useContext(GlobalContext);
+  const [user, setUser] = useContext(GlobalContext);
   const [count, setCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+  if (!user?.user_id) return;
+
+  // appel immédiat
+  fetchSolde();
+
+  // actualisation toutes les 5 secondes
+  const interval = setInterval(fetchSolde, 5000);
+
+  return () => clearInterval(interval);
+}, [user?.user_id]);
+
+
+  const fetchSolde = async () => {
+  if (!user?.user_id) return;
+
+  try {
+    const res = await fetch(
+      `https://epencia.net/app/souangah/annonce/solde.php?user_id=${user.user_id}`
+    );
+
+    const data = await res.json();
+
+    if (data?.solde !== undefined) {
+      setUser(prev => ({ ...prev, solde: data.solde }));
+    }
+  } catch (e) {
+    console.log("Erreur récupération solde :", e);
+  }
+};
+
+
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
@@ -135,9 +169,11 @@ export default function MenuTabs({ navigation }) {
           />
           <View style={styles.principal}>
             <View style={styles.soldeContainer}>
-              <Text style={styles.labelsolde}>Solde</Text>
-              <Text style={styles.footersolde}>{user?.solde || 0} FCFA</Text>
-            </View>
+  <Text style={styles.labelsolde}>Solde</Text>
+  <Text style={styles.footersolde}>
+    {Number(user?.solde || 0).toLocaleString()} FCFA
+  </Text>
+</View>
            
             <TouchableOpacity 
                 onPress={() => navigation.navigate('Notification')}

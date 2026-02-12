@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, Modal, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, Modal, Dimensions, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
@@ -282,7 +282,7 @@ export default function AjoutAnnonce() {
       return (
         <View style={styles.videoContainer}>
           <Ionicons name="videocam" size={30} color="#666" />
-          <Text style={styles.videoText}>Vidéo</Text>
+          <Text style={styles.videoText} allowFontScaling={false}>Vidéo</Text>
         </View>
       );
     }
@@ -315,12 +315,12 @@ export default function AjoutAnnonce() {
               <Ionicons name="close" size={16} color="white" />
             </TouchableOpacity>
             <View style={styles.mediaBadge}>
-              <Text style={styles.mediaBadgeText}>
+              <Text style={styles.mediaBadgeText} allowFontScaling={false}>
                 {media.type === 'video' ? 'VIDÉO' : 'IMAGE'}
               </Text>
             </View>
             <View style={styles.mediaIndex}>
-              <Text style={styles.mediaIndexText}>{i + 1}</Text>
+              <Text style={styles.mediaIndexText} allowFontScaling={false}>{i + 1}</Text>
             </View>
             {media.type === 'video' && (
               <View style={styles.playIconContainer}>
@@ -338,7 +338,7 @@ export default function AjoutAnnonce() {
             onPress={() => setShowMainModal(true)}
           >
             <Ionicons name="images" size={30} color="#666" />
-            <Text style={styles.emptySlotText}>{i + 1}</Text>
+            <Text style={styles.emptySlotText} allowFontScaling={false}>{i + 1}</Text>
           </TouchableOpacity>
         );
       }
@@ -357,7 +357,7 @@ export default function AjoutAnnonce() {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Ajouter un média</Text>
+          <Text style={styles.modalTitle} allowFontScaling={false}>Ajouter un média</Text>
           
           <TouchableOpacity 
             style={styles.modalOption} 
@@ -367,7 +367,7 @@ export default function AjoutAnnonce() {
             }}
           >
             <Ionicons name="camera" size={24} color="#007AFF" />
-            <Text style={styles.modalOptionText}>Appareil photo</Text>
+            <Text style={styles.modalOptionText} allowFontScaling={false}>Appareil photo</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -375,14 +375,14 @@ export default function AjoutAnnonce() {
             onPress={choisirMedia}
           >
             <Ionicons name="images" size={24} color="#007AFF" />
-            <Text style={styles.modalOptionText}>Choisir dans la galerie</Text>
+            <Text style={styles.modalOptionText} allowFontScaling={false}>Choisir dans la galerie</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.modalCancelButton} 
             onPress={() => setShowMainModal(false)}
           >
-            <Text style={styles.modalCancelText}>Annuler</Text>
+            <Text style={styles.modalCancelText} allowFontScaling={false}>Annuler</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -458,7 +458,7 @@ export default function AjoutAnnonce() {
           }}
         >
           <Ionicons name="trash" size={20} color="white" />
-          <Text style={styles.deleteViewerText}>Supprimer</Text>
+          <Text style={styles.deleteViewerText} allowFontScaling={false}>Supprimer</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -466,19 +466,19 @@ export default function AjoutAnnonce() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.titre}>Créer une annonce</Text>
+      <Text style={styles.titre} allowFontScaling={false}>Créer une annonce</Text>
 
       <View style={styles.section}>
         <View style={styles.mediaHeader}>
-          <Text style={styles.label}>Ajouter des (Images et Vidéos)</Text>
-          <Text style={styles.mediaCounter}>
+          <Text style={styles.label} allowFontScaling={false}>Ajouter des (Images et Vidéos)</Text>
+          <Text style={styles.mediaCounter} allowFontScaling={false}>
             {medias.length}/4 médias
           </Text>
         </View>
         
         {medias.length > 0 && (
           <TouchableOpacity style={styles.clearAllButton} onPress={supprimerTousMedias}>
-            <Text style={styles.clearAllText}>Tout supprimer</Text>
+            <Text style={styles.clearAllText} allowFontScaling={false}>Tout supprimer</Text>
           </TouchableOpacity>
         )}
 
@@ -487,42 +487,48 @@ export default function AjoutAnnonce() {
         </View>
 
         {medias.length === 0 && (
-          <Text style={styles.helperText}>
+          <Text style={styles.helperText} allowFontScaling={false}>
             Cliquez sur les emplacements pour ajouter des images ou vidéos
           </Text>
         )}
 
         {!canAddMoreMedias() && (
-          <Text style={styles.limitText}>
+          <Text style={styles.limitText} allowFontScaling={false}>
             Maximum 4 médias atteint
           </Text>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Titre*</Text>
+        <Text style={styles.label} allowFontScaling={false}>Titre*</Text>
         <TextInput
           style={styles.input}
           placeholder="Titre de l'annonce"
+          placeholderTextColor="#94a3b8"
           value={titre}
           onChangeText={setTitre}
+          allowFontScaling={false}
+          textAlignVertical="center"
         />
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Description*</Text>
+        <Text style={styles.label} allowFontScaling={false}>Description*</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Décrivez votre annonce en détail..."
+          placeholderTextColor="#94a3b8"
           value={description}
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
+          allowFontScaling={false}
+          textAlignVertical="top"
         />
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>choisissez une categorie*</Text>
+        <Text style={styles.label} allowFontScaling={false}>choisissez une categorie*</Text>
         
         {typeannonce && Array.isArray(typeannonce) && typeannonce.length > 0 ? (
           <View style={styles.typeAnnonceContainer}>
@@ -540,6 +546,7 @@ export default function AjoutAnnonce() {
                     styles.typeAnnonceButtonText,
                     selectedTypeAnnonce === type.code_type ? styles.typeAnnonceButtonTextSelected : styles.typeAnnonceButtonTextNormal
                   ]}
+                  allowFontScaling={false}
                 >
                   {type.libelle_annonce}
                 </Text>
@@ -547,55 +554,64 @@ export default function AjoutAnnonce() {
             ))}
           </View>
         ) : (
-          <Text style={styles.noTypeText}>Chargement des types d'annonce...</Text>
+          <Text style={styles.noTypeText} allowFontScaling={false}>Chargement des types d'annonce...</Text>
         )}
         
         {selectedTypeAnnonce && (
-          <Text style={styles.selectedTypeText}>
+          <Text style={styles.selectedTypeText} allowFontScaling={false}>
             Type sélectionné: {typeannonce.find(t => t.code_type === selectedTypeAnnonce)?.libelle_annonce || ''}
           </Text>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Numéro WhatsApp</Text>
+        <Text style={styles.label} allowFontScaling={false}>Numéro WhatsApp</Text>
         <TextInput
           style={styles.input}
           placeholder='Entrer votre numéro WhatsApp'
+          placeholderTextColor="#94a3b8"
           value={telephone}
           onChangeText={setTelephone}
           keyboardType="phone-pad"
+          allowFontScaling={false}
+          textAlignVertical="center"
         />
       </View>
 
       <View style={styles.row}>
         <View style={styles.section}>
-          <Text style={styles.label}>Prix Normal*</Text>
+          <Text style={styles.label} allowFontScaling={false}>Prix Normal*</Text>
           <TextInput
             style={styles.input}
             value={prix_normal}
             onChangeText={(text) => handlePriceChange(text, setPrix_Normal)}
             placeholder="Entrez le prix normal"
+            placeholderTextColor="#94a3b8"
             keyboardType="numeric"
+            allowFontScaling={false}
+            textAlignVertical="center"
           />
           {prix_normal && (
-            <Text style={styles.formattedPrice}>
+            <Text style={styles.formattedPrice} allowFontScaling={false}>
               {displayFormattedPrice(prix_normal)} FCFA
             </Text>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Prix Promotionnel*</Text>
+          <Text style={styles.label} allowFontScaling={false}>Prix Promotionnel*</Text>
           <TextInput
             style={styles.input}
             value={prix_promo}
             onChangeText={(text) => handlePriceChange(text, setPrix_Promo)}
             placeholder="Entrez le prix promo"
+            placeholderTextColor="#94a3b8"
             keyboardType="numeric"
+            allowFontScaling={false}
+            textAlignVertical="center"
           />
           {prix_promo && (
-            <Text style={styles.formattedPrice}>
+            <Text style={styles.formattedPrice} allowFontScaling={false}>
               {displayFormattedPrice(prix_promo)} FCFA
             </Text>
           )}
@@ -604,14 +620,14 @@ export default function AjoutAnnonce() {
 
       {prix_normal && prix_promo && (
         <View style={styles.section}>
-          <Text style={styles.discountText}>
+          <Text style={styles.discountText} allowFontScaling={false}>
             Réduction: {Math.round(((parseInt(prix_normal) - parseInt(prix_promo)) / parseInt(prix_normal)) * 100)}%
           </Text>
         </View>
       )}
 
       <View style={styles.section}>
-        <Text style={styles.label}>Audience*</Text>
+        <Text style={styles.label} allowFontScaling={false}>Audience*</Text>
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={audience}
@@ -620,32 +636,46 @@ export default function AjoutAnnonce() {
               calculerPrixDepuisAudience(itemValue);
             }}
             style={styles.picker}
+            mode="dropdown"
+            dropdownIconColor="#000"
           >
+            <Picker.Item label="Sélectionnez une audience" value="" />
             <Picker.Item label="1 à 3 personnes" value="4" />
             <Picker.Item label="1 à 10 personnes" value="10" />
             <Picker.Item label="1 à 50 personnes" value="50" />
             <Picker.Item label="1 à 100 personnes" value="100" />
           </Picker>
         </View>
+        {audience && (
+          <Text style={styles.selectedAudience} allowFontScaling={false}>
+            Audience sélectionnée: {audience === "4" ? "1 à 3 personnes" : 
+                                   audience === "10" ? "1 à 10 personnes" : 
+                                   audience === "50" ? "1 à 50 personnes" : 
+                                   "1 à 100 personnes"}
+          </Text>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Prix à payer*</Text>
+        <Text style={styles.label} allowFontScaling={false}>Prix à payer*</Text>
         <TextInput
           style={styles.input}
           placeholder="Prix à payer pour publier"
+          placeholderTextColor="#94a3b8"
           value={displayFormattedPrice(prix_annonce)}
           editable={false}
+          allowFontScaling={false}
+          textAlignVertical="center"
         />
         {prix_annonce && (
-          <Text style={styles.priceDetails}>
+          <Text style={styles.priceDetails} allowFontScaling={false}>
             {audience ? `${audience} personnes × 30 FCFA = ${displayFormattedPrice(prix_annonce)} FCFA` : ''}
           </Text>
         )}
       </View>
 
       <TouchableOpacity style={styles.validerButton} onPress={validerAnnonce}>
-        <Text style={styles.validerButtonText}>Publier l'annonce</Text>
+        <Text style={styles.validerButtonText} allowFontScaling={false}>Publier l'annonce</Text>
       </TouchableOpacity>
 
       {/* Modals */}
@@ -670,6 +700,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     color: '#333',
+    includeFontPadding: false,
   },
   section: {
     marginBottom: 20,
@@ -679,6 +710,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     color: '#333',
+    includeFontPadding: false,
   },
   input: {
     backgroundColor: 'white',
@@ -687,10 +719,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    minHeight: 48,
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
+    includeFontPadding: false,
   },
   discountText: {
     fontSize: 16,
@@ -698,18 +734,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
+    includeFontPadding: false,
   },
   formattedPrice: {
     fontSize: 12,
     color: '#666',
     marginTop: 5,
     fontStyle: 'italic',
+    includeFontPadding: false,
   },
   priceDetails: {
     fontSize: 12,
     color: '#666',
     marginTop: 5,
     fontStyle: 'italic',
+    includeFontPadding: false,
+  },
+  selectedAudience: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 8,
+    fontStyle: 'italic',
+    includeFontPadding: false,
   },
   mediaHeader: {
     flexDirection: 'row',
@@ -721,6 +767,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     fontWeight: '600',
+    includeFontPadding: false,
   },
   mediaContainer: {
     flexDirection: 'row',
@@ -752,6 +799,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: 'bold',
+    includeFontPadding: false,
   },
   media: {
     width: '100%',
@@ -772,6 +820,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 10,
     color: '#666',
+    includeFontPadding: false,
   },
   deleteButton: {
     position: 'absolute',
@@ -798,6 +847,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 8,
     fontWeight: 'bold',
+    includeFontPadding: false,
   },
   mediaIndex: {
     position: 'absolute',
@@ -814,6 +864,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
+    includeFontPadding: false,
   },
   playIconContainer: {
     position: 'absolute',
@@ -838,18 +889,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+    includeFontPadding: false,
   },
   helperText: {
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
     marginTop: 5,
+    includeFontPadding: false,
   },
   limitText: {
     fontSize: 12,
     color: '#ff6b6b',
     fontWeight: '600',
     marginTop: 5,
+    includeFontPadding: false,
   },
   validerButton: {
     backgroundColor: '#000000',
@@ -863,6 +917,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    includeFontPadding: false,
   },
   row: {
     flexDirection: 'row',
@@ -875,10 +930,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     overflow: 'hidden',
+    minHeight: 50,
   },
   picker: {
-    height: 60,
+    height: Platform.OS === 'ios' ? 150 : 50,
     width: '100%',
+    color: '#000',
   },
   // Styles pour les types d'annonce
   typeAnnonceContainer: {
@@ -906,6 +963,7 @@ const styles = StyleSheet.create({
   typeAnnonceButtonText: {
     fontSize: 14,
     fontWeight: '500',
+    includeFontPadding: false,
   },
   typeAnnonceButtonTextNormal: {
     color: '#333',
@@ -919,6 +977,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 10,
+    includeFontPadding: false,
   },
   selectedTypeText: {
     fontSize: 14,
@@ -926,6 +985,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 10,
     textAlign: 'center',
+    includeFontPadding: false,
   },
   // Styles pour les modals
   modalOverlay: {
@@ -947,6 +1007,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     color: '#333',
+    includeFontPadding: false,
   },
   modalOption: {
     flexDirection: 'row',
@@ -959,6 +1020,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 15,
     color: '#333',
+    includeFontPadding: false,
   },
   modalCancelButton: {
     paddingVertical: 15,
@@ -969,6 +1031,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ff3b30',
     fontWeight: '600',
+    includeFontPadding: false,
   },
   // Styles pour le visualiseur de médias
   mediaViewerOverlay: {
@@ -1012,5 +1075,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
+    includeFontPadding: false,
   },
 });

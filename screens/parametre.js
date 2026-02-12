@@ -1,10 +1,35 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons, FontAwesome5, Feather, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import { GlobalContext } from '../config/GlobalUser';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Parametre({ navigation }) {
-  const [user] = useContext(GlobalContext);
+  const [, setUser] = useContext(GlobalContext);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Déconnexion',
+      'Voulez-vous vraiment vous déconnecter ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Oui, me déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('user'); // Supprime la session
+              setUser(null);                         // Vide le context global
+              navigation.replace('Connexion');       // Nettoie l'historique
+            } catch (e) {
+              console.log('Erreur déconnexion:', e);
+              Alert.alert('Erreur', "Impossible de se déconnecter pour le moment.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <ScrollView 
@@ -68,7 +93,7 @@ export default function Parametre({ navigation }) {
 
       <TouchableOpacity 
         style={styles.logoutButton} 
-        onPress={() => navigation.navigate('Connexion')}
+        onPress={handleLogout}
         activeOpacity={0.9}
       >
         <View style={styles.logoutContent}>

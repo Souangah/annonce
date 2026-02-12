@@ -1,5 +1,17 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  StyleSheet, 
+  Image, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard 
+} from 'react-native';
 import { GlobalContext } from '../config/GlobalUser';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,17 +42,24 @@ export default function Connexion({ navigation, route }) {
       const result = await response.json();
       console.log('Réponse serveur:', result);
 
-      if (result.length > 0 && result[0].telephone) {
-        setUser(result[0]);
-        if (result[0].user_id) {
-          await AsyncStorage.setItem('matricule', result[0].user_id);
+      if (Array.isArray(result) && result.length > 0 && result[0].telephone) {
+        const connectedUser = result[0];
+
+        // 🔐 Mettre dans le context global
+        setUser(connectedUser);
+
+        // 💾 Sauvegarde locale (connexion persistante)
+        await AsyncStorage.multiSet([
+          ['user', JSON.stringify(connectedUser)],
+          ['isLogged', 'true'],
+        ]);
+
+        // 🔁 Redirection
+        if (redirectTo) {
+          navigation.replace(redirectTo, redirectParams);
+        } else {
+          navigation.replace('MenuTabs');
         }
-        // 🔁 REDIRECTION INTELLIGENTE
-  if (redirectTo) {
-    navigation.replace(redirectTo, redirectParams);
-  } else {
-    navigation.replace('MenuTabs');
-  }
       } else {
         Alert.alert('Erreur', 'Téléphone ou mot de passe incorrect');
       }
@@ -55,82 +74,80 @@ export default function Connexion({ navigation, route }) {
       <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
         <View style={styles.content}>
-          {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/images/logo.png')} 
-              style={styles.logo}
-            />
+            <Image source={require('../assets/images/logo.png')} style={styles.logo} />
           </View>
 
-          {/* Titre */}
           <Text style={styles.title}>Connectez-vous</Text>
           <Text style={styles.subtitle}>Entrez vos informations pour continuer</Text>
 
-          {/* Formulaire */}
           <View style={styles.form}>
-            {/* Champ téléphone */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Numéro de téléphone</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="phone" size={18} color="#666" style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, Platform.OS === 'android' && styles.androidInput]}
                   placeholder="Ex: 07 00 00 00 00"
-                  keyboardType="numeric"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="phone-pad"
                   value={telephone}
                   maxLength={10}
-                  onChangeText={(text) => {
-                    const cleanText = text.replace(/[^0-9]/g, '');
-                    setTelephone(cleanText);
-                  }}
+                  onChangeText={(text) => setTelephone(text.replace(/[^0-9]/g, ''))}
+                  allowFontScaling={false}
+                  textAlignVertical="center"
+                  returnKeyType="next"
+                  blurOnSubmit={false}
                 />
               </View>
             </View>
 
-            {/* Champ mot de passe */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Mot de passe</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="lock" size={18} color="#666" style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, styles.passwordInput]}
+                  style={[styles.input, Platform.OS === 'android' && styles.androidInput]}
                   placeholder="Entrez votre mot de passe"
+                  placeholderTextColor="#94a3b8"
                   secureTextEntry={!showPassword}
                   value={mdp}
-                  maxLength={10}
+                  maxLength={20}
                   onChangeText={setMdp}
+                  allowFontScaling={false}
+                  textAlignVertical="center"
+                  returnKeyType="done"
+                  onSubmitEditing={Valider}
                 />
                 <TouchableOpacity 
                   onPress={() => setShowPassword(!showPassword)} 
                   style={styles.eyeButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color="#666" />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Lien mot de passe oublié */}
             <TouchableOpacity 
-              onPress={() => navigation.navigate('Inscription')}
+              onPress={() => navigation.navigate('Inscription')} 
               style={styles.forgotPasswordLink}
             >
               <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
             </TouchableOpacity>
 
-            {/* Bouton de connexion */}
-            <TouchableOpacity style={styles.button} onPress={Valider}>
+            <TouchableOpacity style={styles.button} onPress={Valider} activeOpacity={0.8}>
               <Text style={styles.buttonText}>Se connecter</Text>
               <Feather name="arrow-right" size={18} color="#fff" style={styles.buttonIcon} />
             </TouchableOpacity>
           </View>
 
-          {/* Lien vers inscription */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Vous n'avez pas de compte ? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Inscription')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Inscription')} activeOpacity={0.7}>
               <Text style={styles.signupLink}>Créer un compte</Text>
             </TouchableOpacity>
           </View>
@@ -149,6 +166,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 0 : 20,
   },
   logoContainer: {
     alignItems: 'center',
@@ -165,12 +183,16 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     textAlign: 'center',
     marginBottom: 8,
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   subtitle: {
     fontSize: 14,
     color: '#64748b',
     textAlign: 'center',
     marginBottom: 32,
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   form: {
     marginBottom: 24,
@@ -183,6 +205,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#475569',
     marginBottom: 8,
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -192,30 +216,43 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     borderRadius: 10,
     paddingHorizontal: 12,
+    height: Platform.OS === 'ios' ? 50 : 48, // Hauteur légèrement différente par plateforme
+    minHeight: 48,
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
     fontSize: 15,
-    color: '#1e293b',
+    color: '#000000',
+    paddingVertical: Platform.OS === 'ios' ? 12 : 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    minHeight: 48,
+    allowFontScaling: false,
   },
-  passwordInput: {
-    paddingRight: 40,
+  androidInput: {
+    paddingVertical: 0,
+    height: 48,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   eyeButton: {
-    padding: 8,
+    padding: 4,
+    marginLeft: 4,
   },
   forgotPasswordLink: {
     alignSelf: 'flex-end',
     marginBottom: 24,
+    paddingVertical: 4,
   },
   forgotPasswordText: {
     fontSize: 14,
     color: '#6366f1',
     fontWeight: '500',
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   button: {
     backgroundColor: '#6366f1',
@@ -229,12 +266,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: 56,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginRight: 8,
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   buttonIcon: {
     marginTop: 2,
@@ -243,14 +283,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 8,
   },
   signupText: {
     fontSize: 14,
     color: '#64748b',
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
   signupLink: {
     fontSize: 14,
     color: '#6366f1',
     fontWeight: '600',
+    includeFontPadding: false,
+    allowFontScaling: false,
   },
 });
